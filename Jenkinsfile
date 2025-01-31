@@ -162,4 +162,10 @@ pipeline {
             // Send email on failure
             emailext (
                 subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs
+                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
+                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
+                from: 'yaswanthkumarch2001@gmail.com'
+            )
+        }
+    }
+}
