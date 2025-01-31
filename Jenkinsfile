@@ -134,9 +134,14 @@ pipeline {
         stage('Deploy to Azure') {
             steps {
                 script {
-                    // Corrected Azure deployment command
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def artifactPath = "${WORKSPACE}\\${artifactFile}"  // Ensure the path points to where the file was downloaded
+
+                    echo "Deploying ${artifactFile} from ${artifactPath} to Azure..."
+
+                    // Deploy using the downloaded .zip file
                     bat """
-                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${ZIP_FILE} --type static
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static
                     """
                 }
             }
