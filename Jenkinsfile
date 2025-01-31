@@ -117,12 +117,12 @@ pipeline {
         stage('Login to Azure') {
             steps {
                 script {
-                    withCredentials([
-                        string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), // Use GitHub secret AZURE_CLIENT_ID
-                        string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), // Use GitHub secret AZURE_CLIENT_SECRET
-                        string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') // Use GitHub secret AZURE_TENANT_ID
+                    withCredentials([  // Access Azure secrets from GitHub's secret manager (Jenkins Credentials)
+                        string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
+                        string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
+                        string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
                     ]) {
-                        // Log in using service principal from GitHub Secrets
+                        // Azure login using service principal
                         bat """
                             az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
                         """
