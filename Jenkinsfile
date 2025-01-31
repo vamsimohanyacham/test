@@ -95,10 +95,10 @@ pipeline {
             }
         }
 
-        stage('Extract Artifact') {
+        stage('Extract Artifact from Nexus') {
             steps {
                 script {
-                    bat 'dir'
+                    echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
                     bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
                     echo "Artifact extracted"
                 }
@@ -141,7 +141,7 @@ pipeline {
 
                     // Deploy using the downloaded .zip file
                     bat """
-                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static --target-path wwwroot/
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static
                     """
                 }
             }
