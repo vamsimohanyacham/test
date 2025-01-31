@@ -11,6 +11,9 @@ pipeline {
         ARTIFACT_VERSION = '1.0.1' // Artifact Version
         GROUP_ID = 'com.middlewaretalents' // Artifact Group ID
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory
+        AZURE_RESOURCE_GROUP = 'eshwar'  // Azure Resource Group (Change this)
+        AZURE_APP_NAME = 'eshwar-test'  // Azure Web App Name (Change this)
+        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
     }
 
     stages {
@@ -110,6 +113,34 @@ pipeline {
                 }
             }
         }
+
+        stage('Login to Azure') {
+            steps {
+                script {
+                    withCredentials([
+                        string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), // Use GitHub secret AZURE_CLIENT_ID
+                        string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), // Use GitHub secret AZURE_CLIENT_SECRET
+                        string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') // Use GitHub secret AZURE_TENANT_ID
+                    ]) {
+                        // Log in using service principal from GitHub Secrets
+                        bat """
+                            az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Azure') {
+            steps {
+                script {
+                    // Deploy the zip file to Azure Web App
+                    bat """
+                        az webapp deployment source config-zip --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src ${ZIP_FILE}
+                    """
+                }
+            }
+        }
     }
 
     post {
@@ -117,24 +148,24 @@ pipeline {
             bat 'del /F /Q *.zip || true'
         }
         
-        // success {
-        //     // Send email on successful deployment
-        //     emailext (
-        //         subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
-        //         to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
-        //         from: 'yaswanthkumarch2001@gmail.com'
-        //     )
-        // }
+        success {
+            // Send email on successful deployment
+            emailext (
+                subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
+                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server and Azure Web App to verify the update.",
+                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
+                from: 'yaswanthkumarch2001@gmail.com'
+            )
+        }
 
-        // failure {
-        //     // Send email on failure
-        //     emailext (
-        //         subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-        //         to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
-        //         from: 'yaswanthkumarch2001@gmail.com'
-        //     )
-        // }
+        failure {
+            // Send email on failure
+            emailext (
+                subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
+                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
+                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
+                from: 'yaswanthkumarch2001@gmail.com'
+            )
+        }
     }
 }
