@@ -134,9 +134,9 @@ pipeline {
         stage('Deploy to Azure') {
             steps {
                 script {
-                    // Deploy the zip file to Azure Web App
+                    // Deploy the zip file to Azure Web App using updated command
                     bat """
-                        az webapp deployment source config-zip --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src ${ZIP_FILE}
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src ${ZIP_FILE}
                     """
                 }
             }
@@ -162,10 +162,4 @@ pipeline {
             // Send email on failure
             emailext (
                 subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
-                from: 'yaswanthkumarch2001@gmail.com'
-            )
-        }
-    }
-}
+                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs
