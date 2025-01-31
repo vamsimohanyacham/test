@@ -134,9 +134,9 @@ pipeline {
         stage('Deploy to Azure') {
             steps {
                 script {
-                    // Deploy the zip file to Azure Web App using updated command
+                    // Corrected Azure deployment command
                     bat """
-                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src ${ZIP_FILE}
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${ZIP_FILE} --type static
                     """
                 }
             }
