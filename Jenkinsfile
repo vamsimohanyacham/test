@@ -141,7 +141,7 @@ pipeline {
 
                     // Deploy using the downloaded .zip file
                     bat """
-                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static --target-path wwwroot/
                     """
                 }
             }
