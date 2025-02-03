@@ -585,7 +585,7 @@ pipeline {
                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath D:\\deployments\\middlewaretalents-1.0.1.zip -Force"
                     echo "Created middlewaretalents-1.0.1.zip from dist folder"
 
-                    // List files in D:\deployments to ensure .zip exists
+                    // List files in D:\\deployments to ensure .zip exists
                     bat 'dir D:\\deployments'
                 }
             }
@@ -632,7 +632,7 @@ pipeline {
             steps {
                 script {
                     echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
-                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
+                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath D:\\deployments"
                     echo "Artifact extracted"
                 }
             }
@@ -641,6 +641,7 @@ pipeline {
         stage('Move dist to Nginx Directory') {
             steps {
                 script {
+                    // This will move the entire dist folder (containing index.html, assets, etc.) to the Nginx directory
                     bat "xcopy /E /I /H /Y dist ${NGINX_PATH}\\"
                     echo "Moved dist folder to Nginx directory"
                 }
@@ -669,7 +670,7 @@ pipeline {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     def artifactPath = "D:\\deployments\\${artifactFile}"  // Ensure the path points to where the file was downloaded
-                    def distPath = "D:\\deployments\\dist"  // This is the directory containing your built files
+                    def distPath = "D:\\deployments\\dist"  // This is the directory containing your built files (index.html, assets, etc.)
 
                     echo "Extracting ${artifactFile} from ${artifactPath}..."
                     bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath D:\\deployments"
@@ -712,5 +713,6 @@ pipeline {
         }
     }
 }
+
 
 
