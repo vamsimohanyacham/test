@@ -488,12 +488,16 @@ pipeline {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     def artifactPath = "${WORKSPACE}\\${artifactFile}"  // Ensure the path points to where the file was downloaded
+                    def distPath = "${WORKSPACE}\\dist"  // This is the directory containing your built files
 
-                    echo "Deploying ${artifactFile} from ${artifactPath} to Azure..."
+                    echo "Extracting ${artifactFile} from ${artifactPath}..."
+                    bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath ."
+
+                    echo "Deploying from ${distPath} to Azure..."
 
                     // Deploy using the updated az webapp deploy command (no longer using deprecated method)
                     bat """
-                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${distPath} --type static
                     """
                 }
             }
