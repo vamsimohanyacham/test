@@ -467,21 +467,7 @@ pipeline {
             }
         }
 
-        // New Stage to Restart Nginx Service (if running on Windows)
-        stage('Restart Nginx') {
-            steps {
-                script {
-                    // Ensure Nginx is restarted to reflect the new content
-                    echo "Restarting Nginx..."
-                    bat """
-                        net stop nginx || true
-                        net start nginx || true
-                    """
-                    echo "Nginx restarted successfully."
-                }
-            }
-        }
-
+     
         stage('Login to Azure') {
             steps {
                 script {
