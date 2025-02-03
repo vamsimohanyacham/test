@@ -533,28 +533,61 @@
 // }
 pipeline {
     agent any
+
     environment {
-        AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
-        AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
-        AZURE_TENANT_ID = credentials('AZURE_TENANT_ID')
-        AZURE_RESOURCE_GROUP = 'eshwar'  // Update this with your resource group
-        AZURE_APP_NAME = 'eshwar-test'  // Update with your web app name
+        AZURE_RESOURCE_GROUP = "eshwar"  // Azure resource group
+        AZURE_APP_NAME = "eshwar-test"   // Azure web app name
     }
+
     stages {
-        stage('Build Vite App') {
+        stage('Checkout SCM') {
             steps {
-                bat 'npm install'
-                bat 'npm run build'
-                echo "Checking if dist folder exists..."
-                bat 'dir dist'
+                // Checkout source code from the Git repository
+                checkout scm
             }
         }
-        
+
+        stage('Build Vite App') {
+            steps {
+                script {
+                    echo "Installing dependencies..."
+                    bat 'npm install'
+
+                    echo "Building Vite app..."
+                    bat 'npm run build'
+                    
+                    // Verify dist folder is created
+                    echo "Verifying dist folder..."
+                    bat 'dir dist'
+                }
+            }
+        }
+
         stage('Verify ZIP Contents') {
             steps {
                 script {
-                    echo "Listing contents of the ZIP file..."
-                    bat "powershell -Command \"Expand-Archive -Path D:\\deployments\\middlewaretalents-1.0.1.zip -DestinationPath D:\\deployments -Force; dir D:\\deployments\""
+                    echo "Checking if the ZIP file exists..."
+                    
+                    // Verify if the ZIP file exists before extraction
+                    bat """
+                        if exist D:\\deployments\\middlewaretalents-1.0.1.zip (
+                            echo ZIP file exists!
+                        ) else (
+                            echo ZIP file does not exist!
+                            exit 1
+                        )
+                    """
+                    
+                    // Extract ZIP file if it exists
+                    echo "Extracting middlewaretalents-1.0.1.zip..."
+                    bat """
+                        if exist D:\\deployments\\middlewaretalents-1.0.1.zip (
+                            powershell -Command "Expand-Archive -Path D:\\deployments\\middlewaretalents-1.0.1.zip -DestinationPath D:\\deployments -Force; dir D:\\deployments"
+                        ) else (
+                            echo ZIP file not found!
+                            exit 1
+                        )
+                    """
                 }
             }
         }
@@ -562,10 +595,24 @@ pipeline {
         stage('Verify Extraction') {
             steps {
                 script {
-                    echo "Listing files in D:\\deployments..."
-                    bat "dir D:\\deployments"
-                    echo "Listing files in dist folder..."
-                    bat "dir D:\\deployments\\dist"
+                    // List contents of D:\deployments to verify extraction
+                    echo "Listing contents of D:\\deployments..."
+                    bat 'dir D:\\deployments'
+
+                    // Check if dist folder exists in D:\deployments
+                    echo "Checking for dist folder in D:\\deployments..."
+                    bat 'dir D:\\deployments\\dist'
+
+                    // If dist folder doesn't exist, fail the build
+                    echo "Verifying if dist folder exists..."
+                    bat """
+                        if exist D:\\deployments\\dist (
+                            echo dist folder exists!
+                        ) else (
+                            echo dist folder does not exist!
+                            exit 1
+                        )
+                    """
                 }
             }
         }
@@ -573,18 +620,18 @@ pipeline {
         stage('Deploy to Azure') {
             steps {
                 script {
-                    try {
-                        echo "Deploying from D:\\deployments\\dist to Azure..."
-                        bat "dir D:\\deployments\\dist"
+                    echo "Deploying from D:\\deployments\\dist to Azure..."
 
-                        bat """
+                    // Ensure dist folder exists before deploying
+                    bat """
+                        if exist D:\\deployments\\dist (
+                            echo Dist folder exists, proceeding with deployment...
                             az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path D:\\deployments\\dist --type static
-                        """
-                    } catch (Exception e) {
-                        echo "Deployment failed: ${e.message}"
-                        currentBuild.result = 'FAILURE'
-                        throw e  // Rethrow exception to stop the pipeline
-                    }
+                        ) else (
+                            echo dist folder not found! Deployment aborted.
+                            exit 1
+                        )
+                    """
                 }
             }
         }
@@ -592,16 +639,27 @@ pipeline {
         stage('Post Deployment') {
             steps {
                 script {
-                    try {
-                        emailext subject: "Deployment Status", body: "The deployment process is complete.", to: "vamsimohanyacham@gmail.com"
-                    } catch (Exception e) {
-                        echo "Failed to send email: ${e.message}"
-                    }
+                    echo "Cleaning up deployment files..."
+
+                    // Clean up any deployment-related files (Optional)
+                    bat 'del /F /Q D:\\deployments\\*.zip || true'
+
+                    // Send a success email (Optional)
+                    emailext subject: "Deployment Success", body: "The deployment to Azure was successful.", to: "youremail@example.com"
                 }
             }
         }
     }
+
+    post {
+        failure {
+            echo "The build failed. Please check the logs for more information."
+            // Send failure email (Optional)
+            emailext subject: "Deployment Failure", body: "The deployment to Azure failed. Please check the logs.", to: "youremail@example.com"
+        }
+    }
 }
+
 
 
 
