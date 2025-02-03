@@ -675,6 +675,10 @@ pipeline {
                     echo "Extracting ${artifactFile} from ${artifactPath}..."
                     bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath D:\\deployments -Force"
 
+                    // Verify that the dist folder exists
+                    echo "Verifying the dist folder contents..."
+                    bat "dir D:\\deployments\\dist"
+
                     echo "Deploying from ${distPath} to Azure..."
 
                     // Deploy using the az webapp deploy command
@@ -713,6 +717,7 @@ pipeline {
         }
     }
 }
+
 
 
 
