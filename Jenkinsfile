@@ -543,10 +543,11 @@ pipeline {
         ARTIFACT_NAME = 'middlewaretalents' // Artifact Name
         ARTIFACT_VERSION = '1.0.1' // Artifact Version
         GROUP_ID = 'com.middlewaretalents' // Artifact Group ID
-        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory
         AZURE_RESOURCE_GROUP = 'eshwar'  // Azure Resource Group (Change this)
         AZURE_APP_NAME = 'eshwar-test'  // Azure Web App Name (Change this)
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
+        DEPLOYMENT_DIR = 'D:\\deployments'  // Deployment Directory on D: drive
+        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory
     }
 
     stages {
@@ -577,12 +578,24 @@ pipeline {
         stage('Create .zip Archive') {
             steps {
                 script {
-                    // Ensure there is no existing .zip file by deleting it
+                    // Ensure there is no existing .zip file
                     bat 'if exist D:\\deployments\\middlewaretalents-1.0.1.zip del D:\\deployments\\middlewaretalents-1.0.1.zip'
                     
                     // Compress the dist folder into a .zip archive
                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath D:\\deployments\\middlewaretalents-1.0.1.zip -Force"
                     echo "Created middlewaretalents-1.0.1.zip from dist folder"
+
+                    // List files in D:\deployments to ensure .zip exists
+                    bat 'dir D:\\deployments'
+                }
+            }
+        }
+
+        stage('Verify .zip File Exists') {
+            steps {
+                script {
+                    // Verify that the .zip file exists before attempting to upload
+                    bat 'dir D:\\deployments\\middlewaretalents-1.0.1.zip'
                 }
             }
         }
@@ -590,11 +603,12 @@ pipeline {
         stage('Upload to Nexus') {
             steps {
                 script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def artifactFile = "D:\\deployments\\middlewaretalents-1.0.1.zip"
+                    echo "Uploading ${artifactFile} to Nexus..."
+
+                    // Upload to Nexus using curl
                     bat """
-                        echo Uploading ${artifactFile} to Nexus...
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip
                     """
                 }
             }
@@ -605,6 +619,8 @@ pipeline {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     echo "Downloading ${artifactFile} from Nexus..."
+
+                    // Download from Nexus
                     bat """
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
                     """
@@ -634,7 +650,7 @@ pipeline {
         stage('Login to Azure') {
             steps {
                 script {
-                    withCredentials([  // Access Azure secrets from Jenkins Credentials
+                    withCredentials([  // Access Azure secrets from Jenkins' secret manager
                         string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
                         string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
                         string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
@@ -652,15 +668,15 @@ pipeline {
             steps {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def artifactPath = "${WORKSPACE}\\${artifactFile}"  // Ensure the path points to where the file was downloaded
-                    def distPath = "${WORKSPACE}\\dist"  // This is the directory containing your built files
+                    def artifactPath = "D:\\deployments\\${artifactFile}"  // Ensure the path points to where the file was downloaded
+                    def distPath = "D:\\deployments\\dist"  // This is the directory containing your built files
 
                     echo "Extracting ${artifactFile} from ${artifactPath}..."
-                    bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath ."
+                    bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath D:\\deployments"
 
                     echo "Deploying from ${distPath} to Azure..."
 
-                    // Deploy using the updated az webapp deploy command (no longer using deprecated method)
+                    // Deploy using the az webapp deploy command
                     bat """
                         az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${distPath} --type static
                     """
@@ -671,9 +687,10 @@ pipeline {
 
     post {
         always {
-            bat 'del /F /Q *.zip || true'
+            // Clean up .zip files after deployment
+            bat 'del /F /Q D:\\deployments\\*.zip || true'
         }
-        
+
         success {
             // Send email on successful deployment
             emailext (
@@ -695,4 +712,5 @@ pipeline {
         }
     }
 }
+
 
