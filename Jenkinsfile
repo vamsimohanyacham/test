@@ -632,7 +632,7 @@ pipeline {
             steps {
                 script {
                     echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
-                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath D:\\deployments"
+                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath D:\\deployments -Force"
                     echo "Artifact extracted"
                 }
             }
@@ -673,7 +673,7 @@ pipeline {
                     def distPath = "D:\\deployments\\dist"  // This is the directory containing your built files (index.html, assets, etc.)
 
                     echo "Extracting ${artifactFile} from ${artifactPath}..."
-                    bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath D:\\deployments"
+                    bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath D:\\deployments -Force"
 
                     echo "Deploying from ${distPath} to Azure..."
 
@@ -713,6 +713,7 @@ pipeline {
         }
     }
 }
+
 
 
 
