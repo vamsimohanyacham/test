@@ -357,12 +357,12 @@ pipeline {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
         NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
-        NEXUS_USER = 'admin'  // Nexus Username (Replace with your username)
-        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password (Replace with your password)
-        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name (Replace with your artifact name)
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (Modify if needed)
-        GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID (Modify if needed)
-        NGINX_PATH = 'C:\\nginx\\html'  // Path to Nginx HTML directory (Ensure this path is correct)
+        NEXUS_USER = 'admin'  // Nexus Username
+        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
+        ARTIFACT_NAME = 'middlewaretalents' // Artifact Name
+        ARTIFACT_VERSION = '1.0.1' // Artifact Version
+        GROUP_ID = 'com.middlewaretalents' // Artifact Group ID
+        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory
         AZURE_RESOURCE_GROUP = 'eshwar'  // Azure Resource Group (Change this)
         AZURE_APP_NAME = 'eshwar-test'  // Azure Web App Name (Change this)
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
@@ -460,14 +460,12 @@ pipeline {
         stage('Move dist to Nginx Directory') {
             steps {
                 script {
-                    // Copy dist folder contents to the Nginx HTML directory
                     bat "xcopy /E /I /H /Y dist ${NGINX_PATH}\\"
                     echo "Moved dist folder to Nginx directory"
                 }
             }
         }
 
-     
         stage('Login to Azure') {
             steps {
                 script {
@@ -493,9 +491,9 @@ pipeline {
 
                     echo "Deploying ${artifactFile} from ${artifactPath} to Azure..."
 
-                    // Deploy using the downloaded .zip file
+                    // Deploy using the updated az webapp deploy command (no longer using deprecated method)
                     bat """
-                        az webapp deployment source config-zip --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src ${artifactPath}
+                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${artifactPath} --type static
                     """
                 }
             }
