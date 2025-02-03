@@ -533,134 +533,39 @@
 // }
 pipeline {
     agent any
-
     environment {
-        NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
-        PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
-        NEXUS_USER = 'admin'  // Nexus Username
-        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
-        ARTIFACT_NAME = 'middlewaretalents' // Artifact Name
-        ARTIFACT_VERSION = '1.0.1' // Artifact Version
-        GROUP_ID = 'com.middlewaretalents' // Artifact Group ID
-        AZURE_RESOURCE_GROUP = 'eshwar'  // Azure Resource Group (Change this)
-        AZURE_APP_NAME = 'eshwar-test'  // Azure Web App Name (Change this)
-        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
-        DEPLOYMENT_DIR = 'D:\\deployments'  // Deployment Directory on D: drive
-        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory
+        AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
+        AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
+        AZURE_TENANT_ID = credentials('AZURE_TENANT_ID')
+        AZURE_RESOURCE_GROUP = 'eshwar'  // Update this with your resource group
+        AZURE_APP_NAME = 'eshwar-test'  // Update with your web app name
     }
-
     stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                bat 'npm install'
-            }
-        }
-
         stage('Build Vite App') {
             steps {
+                bat 'npm install'
                 bat 'npm run build'
-            }
-        }
-
-        stage('Check Build Directory') {
-            steps {
+                echo "Checking if dist folder exists..."
                 bat 'dir dist'
             }
         }
-
-        stage('Create .zip Archive') {
+        
+        stage('Verify ZIP Contents') {
             steps {
                 script {
-                    // Ensure there is no existing .zip file
-                    bat 'if exist D:\\deployments\\middlewaretalents-1.0.1.zip del D:\\deployments\\middlewaretalents-1.0.1.zip'
-                    
-                    // Compress the dist folder into a .zip archive
-                    bat "powershell Compress-Archive -Path dist\\* -DestinationPath D:\\deployments\\middlewaretalents-1.0.1.zip -Force"
-                    echo "Created middlewaretalents-1.0.1.zip from dist folder"
-
-                    // List files in D:\\deployments to ensure .zip exists
-                    bat 'dir D:\\deployments'
+                    echo "Listing contents of the ZIP file..."
+                    bat "powershell -Command \"Expand-Archive -Path D:\\deployments\\middlewaretalents-1.0.1.zip -DestinationPath D:\\deployments -Force; dir D:\\deployments\""
                 }
             }
         }
 
-        stage('Verify .zip File Exists') {
+        stage('Verify Extraction') {
             steps {
                 script {
-                    // Verify that the .zip file exists before attempting to upload
-                    bat 'dir D:\\deployments\\middlewaretalents-1.0.1.zip'
-                }
-            }
-        }
-
-        stage('Upload to Nexus') {
-            steps {
-                script {
-                    def artifactFile = "D:\\deployments\\middlewaretalents-1.0.1.zip"
-                    echo "Uploading ${artifactFile} to Nexus..."
-
-                    // Upload to Nexus using curl
-                    bat """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip
-                    """
-                }
-            }
-        }
-
-        stage('Download Artifact from Nexus') {
-            steps {
-                script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    echo "Downloading ${artifactFile} from Nexus..."
-
-                    // Download from Nexus
-                    bat """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
-                    """
-                }
-            }
-        }
-
-        stage('Extract Artifact from Nexus') {
-            steps {
-                script {
-                    echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
-                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath D:\\deployments -Force"
-                    echo "Artifact extracted"
-                }
-            }
-        }
-
-        stage('Move dist to Nginx Directory') {
-            steps {
-                script {
-                    // This will move the entire dist folder (containing index.html, assets, etc.) to the Nginx directory
-                    bat "xcopy /E /I /H /Y dist ${NGINX_PATH}\\"
-                    echo "Moved dist folder to Nginx directory"
-                }
-            }
-        }
-
-        stage('Login to Azure') {
-            steps {
-                script {
-                    withCredentials([  // Access Azure secrets from Jenkins' secret manager
-                        string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
-                        string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
-                        string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
-                    ]) {
-                        // Azure login using service principal
-                        bat """
-                            az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
-                        """
-                    }
+                    echo "Listing files in D:\\deployments..."
+                    bat "dir D:\\deployments"
+                    echo "Listing files in dist folder..."
+                    bat "dir D:\\deployments\\dist"
                 }
             }
         }
@@ -668,55 +573,36 @@ pipeline {
         stage('Deploy to Azure') {
             steps {
                 script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def artifactPath = "D:\\deployments\\${artifactFile}"  // Ensure the path points to where the file was downloaded
-                    def distPath = "D:\\deployments\\dist"  // This is the directory containing your built files (index.html, assets, etc.)
+                    try {
+                        echo "Deploying from D:\\deployments\\dist to Azure..."
+                        bat "dir D:\\deployments\\dist"
 
-                    echo "Extracting ${artifactFile} from ${artifactPath}..."
-                    bat "powershell Expand-Archive -Path ${artifactPath} -DestinationPath D:\\deployments -Force"
+                        bat """
+                            az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path D:\\deployments\\dist --type static
+                        """
+                    } catch (Exception e) {
+                        echo "Deployment failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        throw e  // Rethrow exception to stop the pipeline
+                    }
+                }
+            }
+        }
 
-                    // Verify that the dist folder exists
-                    echo "Verifying the dist folder contents..."
-                    bat "dir D:\\deployments\\dist"
-
-                    echo "Deploying from ${distPath} to Azure..."
-
-                    // Deploy using the az webapp deploy command
-                    bat """
-                        az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path ${distPath} --type static
-                    """
+        stage('Post Deployment') {
+            steps {
+                script {
+                    try {
+                        emailext subject: "Deployment Status", body: "The deployment process is complete.", to: "vamsimohanyacham@gmail.com"
+                    } catch (Exception e) {
+                        echo "Failed to send email: ${e.message}"
+                    }
                 }
             }
         }
     }
-
-    post {
-        always {
-            // Clean up .zip files after deployment
-            bat 'del /F /Q D:\\deployments\\*.zip || true'
-        }
-
-        success {
-            // Send email on successful deployment
-            emailext (
-                subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server and Azure Web App to verify the update.",
-                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
-                from: 'yaswanthkumarch2001@gmail.com'
-            )
-        }
-
-        failure {
-            // Send email on failure
-            emailext (
-                subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
-                from: 'yaswanthkumarch2001@gmail.com'
-            )
-        }
-    }
 }
+
 
 
 
