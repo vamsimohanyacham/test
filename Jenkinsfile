@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+      triggers {
+        githubPush() // Trigger the pipeline on GitHub push events
+    }
+    
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
