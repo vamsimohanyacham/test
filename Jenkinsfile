@@ -287,10 +287,6 @@ pipeline {
             // Fix path by adding double quotes for spaces in path
             bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
             echo "Moved dist folder to Nginx directory"
-
-            // Restart NGINX to pick up the new content
-            bat "nginx -s reload"
-            echo "NGINX reloaded"
         }
     }
 }
