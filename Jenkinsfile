@@ -137,21 +137,18 @@ pipeline {
             }
         }
 
-        stage('Deploy to Azure') {
-            steps {
-                script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def artifactPath = "${WORKSPACE}\\${artifactFile}"  // Ensure the path points to where the file was downloaded
+        stage('Deploy to Azure App Service') {
+    steps {
+        bat """
+            az webapp deploy \
+            --resource-group ${env.RESOURCE_GROUP} \
+            --name ${env.APP_NAME} \
+            --src-path C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\test\\middlewaretalents-1.0.1.zip \
+            --type zip
+        """
+    }
+}
 
-                    echo "Deploying ${artifactFile} from ${artifactPath} to Azure..."
-
-                    // Deploy using the downloaded .zip file
-                    bat """
-                        az webapp deploy source config-zip --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src ${artifactPath}
-                    """
-                }
-            }
-        }
     }
 
     post {
