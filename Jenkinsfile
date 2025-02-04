@@ -331,22 +331,21 @@ pipeline {
             bat 'del /F /Q *.zip || true'
         }
         
-        success {
-            // Send email on successful deployment
+       success {
+            // Ensure recipient emails are set properly
             emailext (
                 subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server and Azure Web App to verify the update.",
-                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
+                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
+                to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
                 from: 'yaswanthkumarch2001@gmail.com'
             )
         }
-
+ 
         failure {
-            // Send email on failure
             emailext (
                 subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
                 body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-                to: 'vamsimohanyacham@gmail.com',  // Ensure recipient is specified
+                to: 'vamsimohanyacham@gmail.com',
                 from: 'yaswanthkumarch2001@gmail.com'
             )
         }
