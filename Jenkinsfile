@@ -137,18 +137,6 @@ pipeline {
             }
         }
 
-        stage('Deploy to Azure App Service') {
-    steps {
-        bat """
-            az webapp deploy \
-            --resource-group ${env.RESOURCE_GROUP} \
-            --name ${env.APP_NAME} \
-            --src-path C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\test\\middlewaretalents-1.0.1.zip \
-            --type zip
-        """
-    }
-}
-
     }
 
     post {
