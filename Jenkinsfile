@@ -178,8 +178,8 @@ pipeline {
         ARTIFACT_VERSION = '1.0.1'  // Artifact Version (Modify if needed)
         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID (Modify if needed)
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory (Modify if needed)
-        AZURE_RESOURCE_GROUP = 'eshwar'  // Azure Resource Group (Change this)
-        AZURE_APP_NAME = 'eshwar-test'  // Azure Web App Name (Change this)
+        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group (Change this)
+        AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name (Change this)
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
     }
  
