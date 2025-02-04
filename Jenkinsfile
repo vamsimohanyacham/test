@@ -167,7 +167,11 @@
 
 pipeline {
     agent any
- 
+
+      triggers {
+        githubPush() // Trigger the pipeline on GitHub push events
+    }
+    
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
@@ -177,31 +181,56 @@ pipeline {
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name (Replace with your artifact name)
         ARTIFACT_VERSION = '1.0.1'  // Artifact Version (Modify if needed)
         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID (Modify if needed)
-NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group (Change this)
+        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory (Modify if needed)
+        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group (Change this)
         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name (Change this)
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
     }
- 
+
     stages {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
             }
         }
- 
+
         stage('Install Dependencies') {
             steps {
                 bat 'npm install'
             }
         }
- 
+
         stage('Build Vite App') {
             steps {
                 bat 'npm run build'
             }
         }
 
-               stage('Check and Delete Old ZIP') {
+        stage('Check Build Directory') {
+            steps {
+                bat 'dir dist'
+            }
+        }
+
+        stage('Lint Code') {
+            steps {
+                bat 'npm run lint'
+            }
+        }
+
+        stage('Check Code Formatting') {
+            steps {
+                bat 'npm run format'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'npm run test'
+            }
+        }
+
+        stage('Check and Delete Old ZIP') {
             steps {
                 script {
                     // Check if the dist.zip file exists and delete it if present
@@ -225,32 +254,9 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                     // bat 'powershell -Command "Compress-Archive -Path build\\* -DestinationPath build.zip"'
                 }
             }
-        }  
- 
-        stage('Check Build Directory') {
-            steps {
-                bat 'dir dist'
-            }
-        }
- 
-        stage('Lint Code') {
-            steps {
-                bat 'npm run lint'
-            }
-        }
- 
-        stage('Check Code Formatting') {
-            steps {
-                bat 'npm run format'
-            }
-        }
- 
-        stage('Run Tests') {
-            steps {
-                bat 'npm run test'
-            }
-        }
- 
+        }        
+
+
         stage('Create .zip Archive') {
             steps {
                 script {
@@ -261,7 +267,7 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 }
             }
         }
- 
+
         stage('Upload to Nexus') {
             steps {
                 script {
@@ -274,7 +280,7 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 }
             }
         }
- 
+
         stage('Download Artifact from Nexus') {
             steps {
                 script {
@@ -286,7 +292,7 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 }
             }
         }
- 
+
         stage('Extract Artifact from Nexus') {
             steps {
                 script {
@@ -296,7 +302,7 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 }
             }
         }
- 
+
       stage('Move dist to Nginx Directory') {
     steps {
         script {
@@ -306,8 +312,8 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
         }
     }
 }
- 
- 
+
+
         stage('Login to Azure') {
             steps {
                 script {
@@ -324,7 +330,7 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 }
             }
         }
- 
+
         stage('Deploy to Azure') {
             steps {
                 script {
@@ -336,12 +342,15 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 }
             }
         }
+
+
     }
- 
+
     post {
         always {
             bat 'del /F /Q *.zip || true'
         }
+        
        success {
             // Ensure recipient emails are set properly
             emailext (
@@ -351,6 +360,7 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
                 from: 'yaswanthkumarch2001@gmail.com'
             )
         }
+ 
         failure {
             emailext (
                 subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
@@ -361,4 +371,6 @@ NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  
         }
     }
 }
+
+
 
