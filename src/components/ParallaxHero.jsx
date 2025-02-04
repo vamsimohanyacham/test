@@ -34,7 +34,7 @@ export default function ParallaxHero() {
       <div className="relative z-10 text-center text-white">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
          Empowering Your Business with Middleware
-        </h1>
+        </h1> g
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold">
           <span className="inline-block min-w-[200px] transition-all duration-500 ease-in-out transform">
             {words[currentWord]}
