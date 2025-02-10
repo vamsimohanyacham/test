@@ -38,26 +38,32 @@ pipeline {
             }
         }
  
-  stage('Increment Version') {
+stage('Increment Version') {
     steps {
         script {
-            // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
+            // Fetch the metadata for the artifact from Nexus Repository
+            def artifactUrl = "${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/${ARTIFACT_VERSION}/${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
             def response = bat(script: """
-                curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
+                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s --head "${artifactUrl}" 
             """, returnStdout: true).trim()
- 
-            echo "Nexus Response: ${response}"
- 
-            // Example logic to increment the version (assuming version is 1.0.1)
-            def currentVersion = '1.0.1' // You can replace this with logic to extract version from Nexus
-            def versionParts = currentVersion.tokenize('.')
-            def patchVersion = versionParts[-1].toInteger() + 1
-            ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
- 
-            echo "New version: ${ARTIFACT_VERSION}"
+            
+            // Check if artifact exists by looking for "HTTP/1.1 200 OK" in the response headers
+            if (response.contains("HTTP/1.1 200 OK")) {
+                echo "Artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} exists in Nexus."
+                // If the artifact exists, extract the version number and increment the patch version
+                def versionParts = ARTIFACT_VERSION.tokenize('.')
+                def patchVersion = versionParts[-1].toInteger() + 1
+                ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+                echo "New version: ${ARTIFACT_VERSION}"
+            } else {
+                // If the artifact does not exist, start with version '1.0.0'
+                ARTIFACT_VERSION = '1.0.0'
+                echo "Artifact does not exist, starting with version: ${ARTIFACT_VERSION}"
+            }
         }
     }
 }
+
  
  
         stage('Create .zip Archive') {
