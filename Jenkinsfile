@@ -123,130 +123,130 @@
 
 
 
-// pipeline {
-//     agent any
+pipeline {
+    agent any
 
-//     triggers {
-//         githubPush() // Trigger the pipeline on GitHub push events
-//     }
+    triggers {
+        githubPush() // Trigger the pipeline on GitHub push events
+    }
     
-//     environment {
-//         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
-//         PATH = "${NODE_HOME}/bin:${env.PATH}"
-//         NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
-//         NEXUS_USER = 'admin'  // Nexus Username
-//         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
-//         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-//         ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
-//         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
-//         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
-//         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
-//         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
-//         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
-//     }
+    environment {
+        NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
+        PATH = "${NODE_HOME}/bin:${env.PATH}"
+        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
+        NEXUS_USER = 'admin'  // Nexus Username
+        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
+        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
+        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
+        GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
+        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
+        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
+        AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
+        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
+    }
 
-//     stages {
-//         stage('Checkout Code') {
-//             steps {
-//                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
-//             }
-//         }
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
+            }
+        }
 
-//         stage('Install Dependencies') {
-//             steps {
-//                 bat 'npm install'
-//             }
-//         }
+        stage('Install Dependencies') {
+            steps {
+                bat 'npm install'
+            }
+        }
 
-//         stage('Build Vite App') {
-//             steps {
-//                 bat 'npm run build'
-//             }
-//         }
+        stage('Build Vite App') {
+            steps {
+                bat 'npm run build'
+            }
+        }
 
-//   stage('Increment Version') {
-//     steps {
-//         script {
-//             // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
-//             def response = bat(script: """
-//                 curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
-//             """, returnStdout: true).trim()
+  stage('Increment Version') {
+    steps {
+        script {
+            // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
+            def response = bat(script: """
+                curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
+            """, returnStdout: true).trim()
 
-//             echo "Nexus Response: ${response}"
+            echo "Nexus Response: ${response}"
 
-//             // Example logic to increment the version (assuming version is 1.0.1)
-//             def currentVersion = '1.0.2' // You can replace this with logic to extract version from Nexus
-//             def versionParts = currentVersion.tokenize('.')
-//             def patchVersion = versionParts[-1].toInteger() + 1
-//             ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+            // Example logic to increment the version (assuming version is 1.0.1)
+            def currentVersion = '1.0.2' // You can replace this with logic to extract version from Nexus
+            def versionParts = currentVersion.tokenize('.')
+            def patchVersion = versionParts[-1].toInteger() + 1
+            ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
-//             echo "New version: ${ARTIFACT_VERSION}"
-//         }
-//     }
-// }
+            echo "New version: ${ARTIFACT_VERSION}"
+        }
+    }
+}
 
 
 
-//         stage('Create .zip Archive') {
-//             steps {
-//                 script {
-//                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-//                     echo "Created ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-//                 }
-//             }
-//         }
+        stage('Create .zip Archive') {
+            steps {
+                script {
+                    bat "powershell Compress-Archive -Path dist\\* -DestinationPath ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    echo "Created ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                }
+            }
+        }
 
-//         stage('Upload to Nexus') {
-//             steps {
-//                 script {
-//                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-//                     def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-//                     bat """
-//                         echo Uploading ${artifactFile} to Nexus...
-//                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
-//                     """
-//                 }
-//             }
-//         }
+        stage('Upload to Nexus') {
+            steps {
+                script {
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    bat """
+                        echo Uploading ${artifactFile} to Nexus...
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
+                    """
+                }
+            }
+        }
 
-//         stage('Download Artifact from Nexus') {
-//             steps {
-//                 script {
-//                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-//                     echo "Downloading ${artifactFile} from Nexus..."
-//                     bat """
-//                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
-//                     """
-//                 }
-//             }
-//         }
+        stage('Download Artifact from Nexus') {
+            steps {
+                script {
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    echo "Downloading ${artifactFile} from Nexus..."
+                    bat """
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
+                    """
+                }
+            }
+        }
 
-//         stage('Extract Artifact from Nexus') {
-//             steps {
-//                 script {
-//                     echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
-//                     bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
-//                     echo "Artifact extracted"
-//                 }
-//             }
-//         }
+        stage('Extract Artifact from Nexus') {
+            steps {
+                script {
+                    echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
+                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
+                    echo "Artifact extracted"
+                }
+            }
+        }
 
-//         stage('Move dist to Nginx Directory') {
-//             steps {
-//                 script {
-//                     bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
-//                     echo "Moved dist folder to Nginx directory"
-//                 }
-//             }
-//         }
-//     }
+        stage('Move dist to Nginx Directory') {
+            steps {
+                script {
+                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+                    echo "Moved dist folder to Nginx directory"
+                }
+            }
+        }
+    }
 
-//     post {
-//         always {
-//             bat 'del /F /Q *.zip || true'
-//         }
-//     }
-// }
+    post {
+        always {
+            bat 'del /F /Q *.zip || true'
+        }
+    }
+}
 
 
 
@@ -653,134 +653,4 @@
 //         }
 //     }
 // }
-
-pipeline {
-    agent any
-
-    triggers {
-        githubPush() // Trigger the pipeline on GitHub push events
-    }
-
-    environment {
-        NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
-        PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
-        NEXUS_USER = 'admin'  // Nexus Username
-        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
-        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (will be dynamically modified)
-        GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
-        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
-        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
-        AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
-        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
-    }
-
-    stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                bat 'npm install'
-            }
-        }
-
-        stage('Build Vite App') {
-            steps {
-                bat 'npm run build'
-            }
-        }
-
-        stage('Increment Version') {
-            steps {
-                script {
-                    // Fetch the latest version from Nexus Repository using the REST API
-                    def response = sh(script: """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "http://localhost:8081/repository/dist/${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/${ARTIFACT_VERSION}/maven-metadata.xml"
-                    """, returnStdout: true).trim()
-
-                    // Extract the current version from the Nexus metadata (maven-metadata.xml)
-                    def matcher = (response =~ /<version>(\d+\.\d+\.\d+)<\/version>/)
-                    def currentVersion = matcher ? matcher[0][1] : '1.0.0' // Default version if not found
-
-                    // Increment the patch version
-                    def versionParts = currentVersion.tokenize('.')
-                    def patchVersion = versionParts[-1].toInteger() + 1
-                    ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
-
-                    echo "New version: ${ARTIFACT_VERSION}"
-                }
-            }
-        }
-
-        stage('Create .zip Archive') {
-            steps {
-                script {
-                    // Create a zip archive of the build output (dist folder)
-                    bat "powershell Compress-Archive -Path dist\\* -DestinationPath ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    echo "Created ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                }
-            }
-        }
-
-        stage('Upload to Nexus') {
-            steps {
-                script {
-                    // Upload the artifact to Nexus
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    bat """
-                        echo Uploading ${artifactFile} to Nexus...
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
-                    """
-                }
-            }
-        }
-
-        stage('Download Artifact from Nexus') {
-            steps {
-                script {
-                    // Download the artifact from Nexus (for testing or deployment purposes)
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    echo "Downloading ${artifactFile} from Nexus..."
-                    bat """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
-                    """
-                }
-            }
-        }
-
-        stage('Extract Artifact from Nexus') {
-            steps {
-                script {
-                    // Extract the artifact downloaded from Nexus
-                    echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
-                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
-                    echo "Artifact extracted"
-                }
-            }
-        }
-
-        stage('Move dist to Nginx Directory') {
-            steps {
-                script {
-                    // Move the dist directory to the Nginx directory for serving
-                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
-                    echo "Moved dist folder to Nginx directory"
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            // Clean up by deleting any .zip files after the build
-            bat 'del /F /Q *.zip || true'
-        }
-    }
-}
 
