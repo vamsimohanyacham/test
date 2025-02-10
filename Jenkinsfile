@@ -49,7 +49,7 @@ pipeline {
             echo "Nexus Response: ${response}"
  
             // Example logic to increment the version (assuming version is 1.0.1)
-            def currentVersion = '1.0.0' // You can replace this with logic to extract version from Nexus
+            def currentVersion = '1.0.1' // You can replace this with logic to extract version from Nexus
             def versionParts = currentVersion.tokenize('.')
             def patchVersion = versionParts[-1].toInteger() + 1
             ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
