@@ -63,40 +63,41 @@ pipeline {
         stage('Increment Version') {
     steps {
         script {
-            // Nexus URL for metadata (replace `middlewaretalents` and `1.0.1` with your actual artifact and group)
+            // Define Nexus API URL (make sure to replace with your repository and group)
             def nexusApiUrl = "http://localhost:8081/service/rest/v1/components?repository=dist&group=com.middlewaretalents"
-            
+
             // Fetch the JSON response from Nexus (list of components)
             def response = bat(script: """
                 curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${nexusApiUrl}"
             """, returnStdout: true).trim()
-            
-            // Parse the JSON response and find the latest version
+
+            // Parse the JSON response
             def jsonResponse = readJSON text: response
-            
-            // Extract all versions and sort them to find the latest one
+
+            // Extract all versions from the response
             def versions = []
             jsonResponse.items.each { item ->
                 def version = item.version
                 versions.add(version)
             }
 
-            // Sort the versions and pick the latest one
-            def sortedVersions = versions.sort { a, b -> 
+            // Sort the versions to find the latest one
+            def sortedVersions = versions.sort { a, b ->
                 def aParts = a.tokenize('.').collect { it.toInteger() }
                 def bParts = b.tokenize('.').collect { it.toInteger() }
                 return aParts <=> bParts
             }
-            
+
+            // Get the latest version from the sorted list
             def latestVersion = sortedVersions.last()
             
-            echo "Latest version found: ${latestVersion}"
+            echo "Latest version found in Nexus: ${latestVersion}"
 
             // Increment the patch version of the latest version
             def versionParts = latestVersion.tokenize('.')
             def patchVersion = versionParts[-1].toInteger() + 1
             ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
-            
+
             echo "New version: ${ARTIFACT_VERSION}"
         }
     }
