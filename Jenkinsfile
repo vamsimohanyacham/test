@@ -40,20 +40,25 @@ pipeline {
         }
 
         stage('Increment Version') {
-            steps {
-                script {
-                    def currentVersion = sh(script: 'curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s ${NEXUS_URL}${ARTIFACT_NAME}-1.0.1.zip', returnStdout: true)
-                    echo "Current version: ${currentVersion}"
+    steps {
+        script {
+            // Get current version from Nexus (simplified)
+            def currentVersion = bat(script: """
+                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s ${NEXUS_URL}${ARTIFACT_NAME}-1.0.1.zip
+            """, returnStdout: true).trim()
 
-                    // Increment the version (Simple example)
-                    def versionParts = ARTIFACT_VERSION.tokenize('.')
-                    def patchVersion = versionParts[-1].toInteger() + 1
-                    ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+            echo "Current version: ${currentVersion}"
 
-                    echo "New version: ${ARTIFACT_VERSION}"
-                }
-            }
+            // Increment version (similar to previous logic)
+            def versionParts = currentVersion.tokenize('.')
+            def patchVersion = versionParts[-1].toInteger() + 1
+            ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+
+            echo "New version: ${ARTIFACT_VERSION}"
         }
+    }
+}
+
 
         stage('Create .zip Archive') {
             steps {
