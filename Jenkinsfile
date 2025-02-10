@@ -47,10 +47,10 @@ stage('Increment Version') {
 
             // Get all available versions from Nexus
             def response = bat(script: """
-                curl -u http://localhost:8081/#browse/browse:dist:middlewaretalents-1.0.0.zip"
-            """, returnStdout: true).trim()
-            
-            echo "Nexus Response: ${response}"
+                     curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
+                     """, returnStdout: true).trim()
+
+                     echo "Nexus Response: ${response}"
 
             // Extract version numbers from the response
             def versionList = []
