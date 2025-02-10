@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -52,23 +51,28 @@ pipeline {
                     def versions = []
                     def jsonResponse = readJSON text: response
 
-                    jsonResponse.items.each { item ->
-                        def version = item.version
-                        versions.add(version)
+                    if (jsonResponse.items.isEmpty()) {
+                        echo "No previous version found, initializing version to 1.0.0"
+                        ARTIFACT_VERSION = '1.0.0'
+                    } else {
+                        jsonResponse.items.each { item ->
+                            def version = item.version
+                            versions.add(version)
+                        }
+
+                        // Sort the versions in descending order
+                        versions = versions.sort { a, b -> b <=> a }
+                        def latestVersion = versions[0] // Latest version from the list
+
+                        echo "Latest version in Nexus: ${latestVersion}"
+
+                        // Increment the patch version
+                        def versionParts = latestVersion.tokenize('.')
+                        def patchVersion = versionParts[-1].toInteger() + 1
+                        ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+
+                        echo "New version: ${ARTIFACT_VERSION}"
                     }
-
-                    // Sort the versions in descending order
-                    versions = versions.sort { a, b -> b <=> a }
-                    def latestVersion = versions[0] // Latest version from the list
-
-                    echo "Latest version in Nexus: ${latestVersion}"
-
-                    // Increment the patch version
-                    def versionParts = latestVersion.tokenize('.')
-                    def patchVersion = versionParts[-1].toInteger() + 1
-                    ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
-
-                    echo "New version: ${ARTIFACT_VERSION}"
                 }
             }
         }
@@ -133,6 +137,7 @@ pipeline {
         }
     }
 }
+
 
 
 
