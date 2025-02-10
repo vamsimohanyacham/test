@@ -59,64 +59,26 @@ pipeline {
         //         }
         //     }
         // }
-stage('Get Latest Artifact Version from Nexus') {
+stage('Increment Version') {
     steps {
         script {
-            // Define Nexus API URL (replace with your repository and group details)
-            def nexusApiUrl = "http://localhost:8081/service/rest/v1/components?repository=dist&group=com.middlewaretalents"
-
-            // Fetch the JSON response from Nexus (list of components)
+            // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
             def response = bat(script: """
-                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${nexusApiUrl}"
+                curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
             """, returnStdout: true).trim()
-
-            // Print the raw response to the console for debugging
+ 
             echo "Nexus Response: ${response}"
-
-            // Parse the JSON response
-            def jsonResponse = readJSON text: response
-
-            // Extract artifact paths and versions
-            def artifactVersions = []
-            jsonResponse.items.each { item ->
-                // Check for the artifact's name that matches the pattern
-                if (item.name.startsWith("middlewaretalents") && item.name.endsWith(".zip")) {
-                    // Extract version from the artifact path (e.g., "middlewaretalents-1.0.1.zip")
-                    def version = item.name.tokenize('-')[1].tokenize('.')[0..2].join('.') // Get version part "1.0.1"
-                    artifactVersions.add(version)
-                }
-            }
-
-            // If no versions were found, output an error
-            if (artifactVersions.isEmpty()) {
-                error "No matching versions found in Nexus"
-            }
-
-            // Sort the versions numerically (e.g., 1.0.1, 1.0.2, 1.1.0, etc.)
-            def sortedVersions = artifactVersions.sort { a, b ->
-                def aVersion = a.tokenize('.').collect { it.toInteger() }
-                def bVersion = b.tokenize('.').collect { it.toInteger() }
-                return aVersion <=> bVersion
-            }
-
-            // Get the latest version (the highest version)
-            def latestVersion = sortedVersions.last()
-
-            echo "Latest version found in Nexus: ${latestVersion}"
-
-            // Increment the patch version by 1
-            def versionParts = latestVersion.tokenize('.')
-            def patchVersion = versionParts[2].toInteger() + 1 // Increment the patch version (last part)
-            def newVersion = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
-
-            echo "New version to be used: ${newVersion}"
-
-            // Set the new version as the ARTIFACT_VERSION
-            ARTIFACT_VERSION = newVersion
+ 
+            // Example logic to increment the version (assuming version is 1.0.1)
+            def currentVersion = '1.0.2' // You can replace this with logic to extract version from Nexus
+            def versionParts = currentVersion.tokenize('.')
+            def patchVersion = versionParts[-1].toInteger() + 1
+            ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+ 
+            echo "New version: ${ARTIFACT_VERSION}"
         }
     }
 }
-
 
 
 
