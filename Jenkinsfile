@@ -41,24 +41,43 @@ pipeline {
 stage('Increment Version') {
     steps {
         script {
-            // Fetch the metadata for the artifact from Nexus Repository
-            def artifactUrl = "${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/${ARTIFACT_VERSION}/${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+            // Fetch the list of artifacts from Nexus repository
+            def artifactUrl = "${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/"
+            echo "Fetching versions from Nexus repository: ${artifactUrl}"
+
+            // Get all available versions from Nexus
             def response = bat(script: """
-                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s --head "${artifactUrl}" 
+                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${artifactUrl}"
             """, returnStdout: true).trim()
             
-            // Check if artifact exists by looking for "HTTP/1.1 200 OK" in the response headers
-            if (response.contains("HTTP/1.1 200 OK")) {
-                echo "Artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} exists in Nexus."
-                // If the artifact exists, extract the version number and increment the patch version
-                def versionParts = ARTIFACT_VERSION.tokenize('.')
+            echo "Nexus Response: ${response}"
+
+            // Extract version numbers from the response
+            def versionList = []
+            response.split('\n').each { line ->
+                if (line.contains("${ARTIFACT_NAME}-")) {
+                    def versionMatch = (line =~ /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)/)
+                    if (versionMatch) {
+                        versionList.add(versionMatch[0][1])
+                    }
+                }
+            }
+
+            // Sort and find the latest version (highest patch version)
+            if (versionList.size() > 0) {
+                def latestVersion = versionList.sort().last()
+                echo "Latest version found in Nexus: ${latestVersion}"
+
+                // Increment the patch version
+                def versionParts = latestVersion.tokenize('.')
                 def patchVersion = versionParts[-1].toInteger() + 1
                 ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
-                echo "New version: ${ARTIFACT_VERSION}"
+
+                echo "New incremented version: ${ARTIFACT_VERSION}"
             } else {
-                // If the artifact does not exist, start with version '1.0.0'
+                // If no versions are found, start from 1.0.0
                 ARTIFACT_VERSION = '1.0.0'
-                echo "Artifact does not exist, starting with version: ${ARTIFACT_VERSION}"
+                echo "No versions found, starting with version: ${ARTIFACT_VERSION}"
             }
         }
     }
