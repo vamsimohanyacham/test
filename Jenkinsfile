@@ -214,7 +214,7 @@ pipeline {
     triggers {
         githubPush() // Trigger the pipeline on GitHub push events
     }
-    
+
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
@@ -222,7 +222,7 @@ pipeline {
         NEXUS_USER = 'admin'  // Nexus Username
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
+        ARTIFACT_VERSION = '1.0.1'  // Default Artifact Version
         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
@@ -255,21 +255,25 @@ pipeline {
                     // Define Nexus API URL (replace with your repository and group details)
                     def nexusApiUrl = "http://localhost:8081/service/rest/v1/components?repository=dist&group=com.middlewaretalents"
 
+                    echo "Fetching artifacts from Nexus..."
+
                     // Fetch the JSON response from Nexus (list of components)
                     def response = bat(script: """
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${nexusApiUrl}"
                     """, returnStdout: true).trim()
 
-                    // Print the raw response to the console for debugging
-                    echo "Nexus Response: ${response}"
+                    echo "Nexus API Response: ${response}"
 
                     // Parse the JSON response
                     def jsonResponse = readJSON text: response
 
-                    // Extract artifact paths and versions
+                    // Debugging: Output all items returned by Nexus to see their structure
+                    echo "Items from Nexus: ${jsonResponse.items}"
+
+                    // Extract artifact versions based on the file naming pattern
                     def artifactVersions = []
                     jsonResponse.items.each { item ->
-                        // Check for the artifact's name that matches the pattern
+                        // Check if the artifact name matches the desired pattern
                         if (item.name.startsWith("middlewaretalents") && item.name.endsWith(".zip")) {
                             // Extract version from the artifact path (e.g., "middlewaretalents-1.0.1.zip")
                             def version = item.name.tokenize('-')[1].tokenize('.')[0..2].join('.') // Get version part "1.0.1"
@@ -282,12 +286,16 @@ pipeline {
                         error "No matching versions found in Nexus"
                     }
 
+                    echo "Found Versions: ${artifactVersions}"
+
                     // Sort the versions numerically (e.g., 1.0.1, 1.0.2, 1.1.0, etc.)
                     def sortedVersions = artifactVersions.sort { a, b ->
                         def aVersion = a.tokenize('.').collect { it.toInteger() }
                         def bVersion = b.tokenize('.').collect { it.toInteger() }
                         return aVersion <=> bVersion
                     }
+
+                    echo "Sorted Versions: ${sortedVersions}"
 
                     // Get the latest version (the highest version)
                     def latestVersion = sortedVersions.last()
@@ -389,3 +397,4 @@ pipeline {
         }
     }
 }
+
