@@ -9,14 +9,14 @@ pipeline {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
         NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
-        NEXUS_USER = 'admin'  // Nexus Username (Replace with your username)
-        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password (Replace with your password)
-        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name (Replace with your artifact name)
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (Modify if needed)
-        GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID (Modify if needed)
-        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory (Modify if needed)
-        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group (Change this)
-        AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name (Change this)
+        NEXUS_USER = 'admin'  // Nexus Username
+        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
+        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
+        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
+        GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
+        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
+        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
+        AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
     }
 
@@ -39,37 +39,27 @@ pipeline {
             }
         }
 
-        stage('Check Build Directory') {
+        stage('Increment Version') {
             steps {
-                bat 'dir dist'
-            }
-        }
+                script {
+                    def currentVersion = sh(script: 'curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s ${NEXUS_URL}${ARTIFACT_NAME}-1.0.1.zip', returnStdout: true)
+                    echo "Current version: ${currentVersion}"
 
-        stage('Lint Code') {
-            steps {
-                bat 'npm run lint'
-            }
-        }
+                    // Increment the version (Simple example)
+                    def versionParts = ARTIFACT_VERSION.tokenize('.')
+                    def patchVersion = versionParts[-1].toInteger() + 1
+                    ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
-        stage('Check Code Formatting') {
-            steps {
-                bat 'npm run format'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                bat 'npm run test'
+                    echo "New version: ${ARTIFACT_VERSION}"
+                }
             }
         }
 
         stage('Create .zip Archive') {
             steps {
                 script {
-                    bat 'dir dist'
                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    echo "Created ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip from dist folder"
-                    bat 'dir'
+                    echo "Created ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                 }
             }
         }
@@ -112,59 +102,20 @@ pipeline {
         stage('Move dist to Nginx Directory') {
             steps {
                 script {
-                    // Fix path by adding double quotes for spaces in path
                     bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
                     echo "Moved dist folder to Nginx directory"
                 }
             }
         }
-
-        // Uncomment when you want to enable Azure deployment:
-        // stage('Login to Azure') {
-        //     steps {
-        //         script {
-        //             withCredentials([  // Access Azure secrets from GitHub's secret manager (Jenkins Credentials)
-        //                 string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
-        //                 string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
-        //                 string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
-        //             ]) {
-        //                 // Azure login using service principal
-        //                 bat """
-        //                     az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
-        //                 """
-        //             }
-        //         }
-        //     }
-        // }
-
     }
 
     post {
         always {
-            // Clean up ZIP files after the pipeline runs
             bat 'del /F /Q *.zip || true'
         }
-        
-        // Uncomment and configure email notifications when needed
-        // success {
-        //     emailext (
-        //         subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
-        //         to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
-        //         from: 'yaswanthkumarch2001@gmail.com'
-        //     )
-        // }
- 
-        // failure {
-        //     emailext (
-        //         subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-        //         to: 'vamsimohanyacham@gmail.com',
-        //         from: 'yaswanthkumarch2001@gmail.com'
-        //     )
-        // }
     }
 }
+
 
 
 
