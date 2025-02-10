@@ -175,7 +175,7 @@ pipeline {
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
+        NEXUS_URL = 'http://localhost:8081/repository/test/'  // Nexus Repository URL
         NEXUS_USER = 'admin'  // Nexus Username (Replace with your username)
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password (Replace with your password)
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name (Replace with your artifact name)
