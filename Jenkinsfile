@@ -9,7 +9,7 @@ pipeline {
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
+        NEXUS_URL = 'http://localhost:8081/service/rest/v1/search/assets'  // Nexus REST API URL for assets search
         NEXUS_USER = 'admin'  // Nexus Username
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
@@ -41,26 +41,25 @@ pipeline {
         stage('Increment Version') {
             steps {
                 script {
-                    // Fetch the latest version of the artifact from Nexus
+                    // Fetch the list of versions of the artifact from Nexus using the REST API
                     def response = bat(script: """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "http://localhost:8081/repository/dist/${ARTIFACT_NAME}/"
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${NEXUS_URL}?repository=dist&group=${GROUP_ID}&name=${ARTIFACT_NAME}"
                     """, returnStdout: true).trim()
 
                     echo "Nexus Response: ${response}"
 
-                    // Find the latest version from the response (this assumes a simple version pattern)
-                    def versionPattern = /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)\.zip/
+                    // Parse the response to find the latest version
                     def versions = []
+                    def jsonResponse = readJSON text: response
 
-                    // Regex to extract versions
-                    def matcher = (response =~ versionPattern)
-                    matcher.each {
-                        versions.add(it[1])
+                    jsonResponse.items.each { item ->
+                        def version = item.version
+                        versions.add(version)
                     }
 
-                    // Sort the versions and pick the latest one
+                    // Sort the versions in descending order
                     versions = versions.sort { a, b -> b <=> a }
-                    def latestVersion = versions[0] // Latest version
+                    def latestVersion = versions[0] // Latest version from the list
 
                     echo "Latest version in Nexus: ${latestVersion}"
 
@@ -87,7 +86,7 @@ pipeline {
             steps {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def nexusRepositoryUrl = "${NEXUS_URL}/${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     bat """
                         echo Uploading ${artifactFile} to Nexus...
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
