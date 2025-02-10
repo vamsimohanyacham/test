@@ -70,6 +70,9 @@ stage('Get Latest Artifact Version from Nexus') {
                 curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${nexusApiUrl}"
             """, returnStdout: true).trim()
 
+            // Print the raw response to the console for debugging
+            echo "Nexus Response: ${response}"
+
             // Parse the JSON response
             def jsonResponse = readJSON text: response
 
@@ -79,12 +82,17 @@ stage('Get Latest Artifact Version from Nexus') {
                 // Check for the artifact's name that matches the pattern
                 if (item.name.startsWith("middlewaretalents") && item.name.endsWith(".zip")) {
                     // Extract version from the artifact path (e.g., "middlewaretalents-1.0.1.zip")
-                    def version = item.version
+                    def version = item.name.tokenize('-')[1].tokenize('.')[0..2].join('.') // Get version part "1.0.1"
                     artifactVersions.add(version)
                 }
             }
 
-            // Sort the versions numerically
+            // If no versions were found, output an error
+            if (artifactVersions.isEmpty()) {
+                error "No matching versions found in Nexus"
+            }
+
+            // Sort the versions numerically (e.g., 1.0.1, 1.0.2, 1.1.0, etc.)
             def sortedVersions = artifactVersions.sort { a, b ->
                 def aVersion = a.tokenize('.').collect { it.toInteger() }
                 def bVersion = b.tokenize('.').collect { it.toInteger() }
@@ -96,11 +104,19 @@ stage('Get Latest Artifact Version from Nexus') {
 
             echo "Latest version found in Nexus: ${latestVersion}"
 
-            // Set the latest version as the ARTIFACT_VERSION
-            ARTIFACT_VERSION = latestVersion
+            // Increment the patch version by 1
+            def versionParts = latestVersion.tokenize('.')
+            def patchVersion = versionParts[2].toInteger() + 1 // Increment the patch version (last part)
+            def newVersion = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+
+            echo "New version to be used: ${newVersion}"
+
+            // Set the new version as the ARTIFACT_VERSION
+            ARTIFACT_VERSION = newVersion
         }
     }
 }
+
 
 
 
