@@ -52,9 +52,11 @@ pipeline {
                     def jsonResponse = readJSON text: response
 
                     if (jsonResponse.items.isEmpty()) {
+                        // No artifact found, so initialize version to 1.0.0
                         echo "No previous version found, initializing version to 1.0.0"
                         ARTIFACT_VERSION = '1.0.0'
                     } else {
+                        // Extract versions from the response
                         jsonResponse.items.each { item ->
                             def version = item.version
                             versions.add(version)
@@ -90,7 +92,7 @@ pipeline {
             steps {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def nexusRepositoryUrl = "${NEXUS_URL}/${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def nexusRepositoryUrl = "http://localhost:8081/repository/dist/${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     bat """
                         echo Uploading ${artifactFile} to Nexus...
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
@@ -105,7 +107,7 @@ pipeline {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     echo "Downloading ${artifactFile} from Nexus..."
                     bat """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O http://localhost:8081/repository/dist/${artifactFile}
                     """
                 }
             }
@@ -137,6 +139,7 @@ pipeline {
         }
     }
 }
+
 
 
 
