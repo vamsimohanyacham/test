@@ -42,7 +42,8 @@ stage('Increment Version') {
     steps {
         script {
             // Fetch the list of artifacts from Nexus repository
-            def artifactUrl = "${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/"
+            // def artifactUrl = "${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/"
+            def artifactUrl = "http://localhost:8081/#browse/browse:dist"
             echo "Fetching versions from Nexus repository: ${artifactUrl}"
 
             // Get all available versions from Nexus
