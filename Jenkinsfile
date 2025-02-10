@@ -1,6 +1,6 @@
 pipeline {
     agent any
- 
+
     triggers {
         githubPush() // Trigger the pipeline on GitHub push events
     }
@@ -11,47 +11,53 @@ pipeline {
         NEXUS_USER = 'admin'  // Nexus Username
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
+        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (initial version, will be updated dynamically)
         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
     }
- 
+
     stages {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
             }
         }
- 
+
         stage('Install Dependencies') {
             steps {
                 bat 'npm install'
             }
         }
- 
+
         stage('Build Vite App') {
             steps {
                 bat 'npm run build'
             }
         }
- 
+
         stage('Increment Version') {
             steps {
                 script {
-                    // Fetch the latest Git tag (if available)
-                    def currentVersion = bat(script: 'git describe --tags --abbrev=0', returnStdout: true).trim()
-                    
-                    // If no tags exist, start from version 1.0.0
-                    if (currentVersion == '') {
-                        currentVersion = '1.0.0' // Default version if no tags are found
+                    // Try to fetch the latest Git tag (if available)
+                    def currentVersion
+                    try {
+                        currentVersion = bat(script: 'git describe --tags --abbrev=0', returnStdout: true).trim()
+
+                        // If there are no tags, `git describe` will fail, so set the default version
+                        if (currentVersion == '') {
+                            currentVersion = '1.0.0' // Default version if no tags are found
+                        }
+                    } catch (Exception e) {
+                        // If `git describe` fails, set version to `1.0.0`
+                        currentVersion = '1.0.0'
                     }
 
                     // Split the current version into parts (major, minor, patch)
                     def versionParts = currentVersion.tokenize('.')
-                    
+
                     // Increment the patch version (last part)
                     def patchVersion = versionParts[-1].toInteger() + 1
                     ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
@@ -66,7 +72,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Create .zip Archive') {
             steps {
                 script {
@@ -75,7 +81,7 @@ pipeline {
                 }
             }
         }
- 
+
         stage('Upload to Nexus') {
             steps {
                 script {
@@ -88,7 +94,7 @@ pipeline {
                 }
             }
         }
- 
+
         stage('Download Artifact from Nexus') {
             steps {
                 script {
@@ -100,7 +106,7 @@ pipeline {
                 }
             }
         }
- 
+
         stage('Extract Artifact from Nexus') {
             steps {
                 script {
@@ -110,7 +116,7 @@ pipeline {
                 }
             }
         }
- 
+
         stage('Move dist to Nginx Directory') {
             steps {
                 script {
@@ -120,13 +126,14 @@ pipeline {
             }
         }
     }
- 
+
     post {
         always {
             bat 'del /F /Q *.zip || true'
         }
     }
 }
+
 
 
 
