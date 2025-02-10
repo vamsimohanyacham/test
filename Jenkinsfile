@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     triggers {
-        githubPush() // Trigger the pipeline on GitHub push events
+        githubPush()  // Trigger the pipeline on GitHub push events
     }
+
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
@@ -11,7 +12,7 @@ pipeline {
         NEXUS_USER = 'admin'  // Nexus Username
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (initial version, will be updated dynamically)
+        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
@@ -41,34 +42,43 @@ pipeline {
         stage('Increment Version') {
             steps {
                 script {
-                    // Try to fetch the latest Git tag (if available)
-                    def currentVersion
-                    try {
-                        currentVersion = bat(script: 'git describe --tags --abbrev=0', returnStdout: true).trim()
+                    // Fetch latest tag from the remote repository
+                    def latestTag = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
+                    echo "Latest tag: ${latestTag}"
 
-                        // If there are no tags, `git describe` will fail, so set the default version
-                        if (currentVersion == '') {
-                            currentVersion = '1.0.0' // Default version if no tags are found
-                        }
-                    } catch (Exception e) {
-                        // If `git describe` fails, set version to `1.0.0`
-                        currentVersion = '1.0.0'
-                    }
-
-                    // Split the current version into parts (major, minor, patch)
-                    def versionParts = currentVersion.tokenize('.')
-
-                    // Increment the patch version (last part)
+                    // Assuming version is in the form of x.y.z (e.g., 1.0.1), increment the patch version
+                    def versionParts = latestTag.tokenize('.')
                     def patchVersion = versionParts[-1].toInteger() + 1
                     ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
                     echo "New version: ${ARTIFACT_VERSION}"
-                    
-                    // Create a new Git tag for this version
-                    bat "git tag ${ARTIFACT_VERSION}"
-                    bat "git push origin ${ARTIFACT_VERSION}"
+                }
+            }
+        }
 
-                    echo "Created and pushed tag: ${ARTIFACT_VERSION}"
+        stage('Stage and Commit Changes') {
+            steps {
+                script {
+                    // Stage all changes (modify the paths as needed)
+                    sh 'git add .'
+
+                    // Commit the changes
+                    sh 'git commit -m "Updated app for new version ${ARTIFACT_VERSION}"'
+
+                    // Push the commit (if necessary)
+                    sh 'git push origin main'
+                }
+            }
+        }
+
+        stage('Create and Push Tag') {
+            steps {
+                script {
+                    // Create a new Git tag for the version
+                    sh "git tag ${ARTIFACT_VERSION}"
+
+                    // Push the tag to the remote repository
+                    sh "git push origin ${ARTIFACT_VERSION}"
                 }
             }
         }
@@ -133,6 +143,7 @@ pipeline {
         }
     }
 }
+
 
 
 
