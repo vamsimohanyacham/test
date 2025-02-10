@@ -39,49 +39,26 @@ pipeline {
             }
         }
 
-        // stage('Increment Version') {
-        //     steps {
-        //         script {
-        //             // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
-        //             def response = bat(script: """
-        //                 curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
-        //             """, returnStdout: true).trim()
+        stage('Increment Version') {
+            steps {
+                script {
+                    // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
+                    def response = bat(script: """
+                        curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
+                    """, returnStdout: true).trim()
 
-        //             echo "Nexus Response: ${response}"
+                    echo "Nexus Response: ${response}"
 
-        //             // Example logic to increment the version (assuming version is 1.0.1)
-        //             def currentVersion = '1.0.3' // You can replace this with logic to extract version from Nexus
-        //             def versionParts = currentVersion.tokenize('.')
-        //             def patchVersion = versionParts[-1].toInteger() + 1
-        //             ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
+                    // Example logic to increment the version (assuming version is 1.0.1)
+                    def currentVersion = '1.0.3' // You can replace this with logic to extract version from Nexus
+                    def versionParts = currentVersion.tokenize('.')
+                    def patchVersion = versionParts[-1].toInteger() + 1
+                    ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
-        //             echo "New version: ${ARTIFACT_VERSION}"
-        //         }
-        //     }
-        // }
-stage('Increment Version') {
-    steps {
-        script {
-            // Using Nexus REST API to fetch metadata for the artifact (for example, using `curl`)
-            def response = bat(script: """
-                curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
-            """, returnStdout: true).trim()
- 
-            echo "Nexus Response: ${response}"
- 
-            // Example logic to increment the version (assuming version is 1.0.1)
-            def currentVersion = '1.0.2' // You can replace this with logic to extract version from Nexus
-            def versionParts = currentVersion.tokenize('.')
-            def patchVersion = versionParts[-1].toInteger() + 1
-            ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
- 
-            echo "New version: ${ARTIFACT_VERSION}"
+                    echo "New version: ${ARTIFACT_VERSION}"
+                }
+            }
         }
-    }
-}
-
-
-
         stage('Create .zip Archive') {
             steps {
                 script {
