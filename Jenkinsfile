@@ -539,9 +539,11 @@ pipeline {
 
     post {
         always {
-            // Clean up ZIP files after the pipeline runs
-            script {
-                bat 'del /F /Q *.zip || true'
+            node {
+                // Clean up ZIP files after the pipeline runs
+                script {
+                    bat 'del /F /Q *.zip || true'
+                }
             }
         }
 
@@ -564,3 +566,4 @@ pipeline {
         }
     }
 }
+
