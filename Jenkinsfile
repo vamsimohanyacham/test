@@ -121,10 +121,10 @@ pipeline {
 
         failure {
             script {
-                echo "Pipeline failed, deploying the first version (1.0.0)..."
+                echo "Pipeline failed, deploying the first version (1.0.1)..."
 
-                // Download the first version (1.0.0)
-                def firstVersion = '1.0.0'
+                // Download the first version (1.0.1)
+                def firstVersion = '1.0.1'
                 def artifactFile = "${ARTIFACT_NAME}-${firstVersion}.zip"
                 echo "Downloading ${artifactFile} from Nexus..."
                 bat """
@@ -135,9 +135,9 @@ pipeline {
                 bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${firstVersion}.zip -DestinationPath ."
                 echo "Artifact extracted"
 
-                echo "Moving dist folder for version 1.0.0 to Nginx directory..."
+                echo "Moving dist folder for version 1.0.1 to Nginx directory..."
                 bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
-                echo "Deployed version 1.0.0 to Nginx"
+                echo "Deployed version 1.0.1 to Nginx"
             }
         }
     }
