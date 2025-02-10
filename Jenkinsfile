@@ -47,7 +47,7 @@ stage('Increment Version') {
 
             // Get all available versions from Nexus
             def response = bat(script: """
-                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${artifactUrl}"
+                curl -u http://localhost:8081/#browse/browse:dist:middlewaretalents-1.0.0.zip"
             """, returnStdout: true).trim()
             
             echo "Nexus Response: ${response}"
