@@ -47,8 +47,7 @@ stage('Increment Version') {
             echo "Fetching versions from Nexus repository: ${artifactUrl}"
 
             // Get all available versions from Nexus
-def response = bat(script: "curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s \"${artifactUrl}\"", returnStdout: true).trim()
-            
+                    def response = bat(script: "curl -u admin:vamsi@123 -s \"http://localhost:8081/service/rest/v1/search?repository=dist\"", returnStdout: true).trim()            
             echo "Nexus Response: ${response}"
 
             // Extract version numbers from the response
