@@ -42,15 +42,15 @@ stage('Increment Version') {
     steps {
         script {
             // Fetch the list of artifacts from Nexus repository
-            def artifactUrl = "http://localhost:8081/#browse/browse:dist:middlewaretalents-1.0.0.zip"
+            def artifactUrl = "${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_NAME}/"
             echo "Fetching versions from Nexus repository: ${artifactUrl}"
 
             // Get all available versions from Nexus
-            def response = bat(script: """
-                     curl -u admin:vamsi@123 -s "http://localhost:8081/repository/dist/middlewaretalents/1.0.1/middlewaretalents-1.0.1.zip"
-                     """, returnStdout: true).trim()
-
-                     echo "Nexus Response: ${response}"
+             def response = bat(script: """
+                curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${artifactUrl}"
+            """, returnStdout: true).trim()
+            
+            echo "Nexus Response: ${response}"
 
             // Extract version numbers from the response
             def versionList = []
