@@ -120,22 +120,22 @@ pipeline {
 }
 
 
-        stage('Login to Azure') {
-            steps {
-                script {
-                    withCredentials([  // Access Azure secrets from GitHub's secret manager (Jenkins Credentials)
-                        string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
-                        string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
-                        string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
-                    ]) {
-                        // Azure login using service principal
-                        bat """
-                            az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
-                        """
-                    }
-                }
-            }
-        }
+        // stage('Login to Azure') {
+        //     steps {
+        //         script {
+        //             withCredentials([  // Access Azure secrets from GitHub's secret manager (Jenkins Credentials)
+        //                 string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
+        //                 string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
+        //                 string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
+        //             ]) {
+        //                 // Azure login using service principal
+        //                 bat """
+        //                     az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
 
     }
 
@@ -144,25 +144,25 @@ pipeline {
             bat 'del /F /Q *.zip || true'
         }
         
-       success {
-            // Ensure recipient emails are set properly
-            emailext (
-                subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
-                to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
-                from: 'yaswanthkumarch2001@gmail.com'
-            )
-        }
+    //    success {
+    //         // Ensure recipient emails are set properly
+    //         emailext (
+    //             subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
+    //             body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
+    //             to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
+    //             from: 'yaswanthkumarch2001@gmail.com'
+    //         )
+    //     }
  
-        failure {
-            emailext (
-                subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-                body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-                to: 'vamsimohanyacham@gmail.com',
-                from: 'yaswanthkumarch2001@gmail.com'
-            )
-        }
-    }
+    //     failure {
+    //         emailext (
+    //             subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
+    //             body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
+    //             to: 'vamsimohanyacham@gmail.com',
+    //             from: 'yaswanthkumarch2001@gmail.com'
+    //         )
+    //     }
+    // }
 }
 
 // pipeline {
