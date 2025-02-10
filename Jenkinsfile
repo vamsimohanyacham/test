@@ -59,8 +59,7 @@ pipeline {
         //         }
         //     }
         // }
-
-        stage('Increment Version') {
+stage('Increment Version') {
     steps {
         script {
             // Define Nexus API URL (make sure to replace with your repository and group)
@@ -74,24 +73,32 @@ pipeline {
             // Parse the JSON response
             def jsonResponse = readJSON text: response
 
-            // Extract all versions from the response
-            def versions = []
+            // Extract artifact paths and versions
+            def artifactPaths = []
             jsonResponse.items.each { item ->
-                def version = item.version
-                versions.add(version)
+                // Check for the artifact's name that matches the pattern
+                if (item.name.startsWith("middlewaretalents") && item.name.endsWith(".zip")) {
+                    // Extract version from the artifact path (e.g., "middlewaretalents-1.0.1.zip")
+                    def version = item.version
+                    def artifactPath = "middlewaretalents-${version}.zip"
+                    artifactPaths.add(artifactPath)
+                }
             }
 
-            // Sort the versions to find the latest one
-            def sortedVersions = versions.sort { a, b ->
-                def aParts = a.tokenize('.').collect { it.toInteger() }
-                def bParts = b.tokenize('.').collect { it.toInteger() }
-                return aParts <=> bParts
+            // Sort the artifact paths to find the latest version
+            def sortedArtifactPaths = artifactPaths.sort { a, b ->
+                def aVersion = a.tokenize('-')[1].tokenize('.').collect { it.toInteger() }
+                def bVersion = b.tokenize('-')[1].tokenize('.').collect { it.toInteger() }
+                return aVersion <=> bVersion
             }
 
-            // Get the latest version from the sorted list
-            def latestVersion = sortedVersions.last()
+            // Get the latest artifact path from the sorted list
+            def latestArtifactPath = sortedArtifactPaths.last()
             
-            echo "Latest version found in Nexus: ${latestVersion}"
+            echo "Latest artifact path found in Nexus: ${latestArtifactPath}"
+
+            // Extract the version from the latest artifact path (e.g., "middlewaretalents-1.0.1.zip")
+            def latestVersion = latestArtifactPath.tokenize('-')[1].tokenize('.').join('.')
 
             // Increment the patch version of the latest version
             def versionParts = latestVersion.tokenize('.')
@@ -99,9 +106,14 @@ pipeline {
             ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
             echo "New version: ${ARTIFACT_VERSION}"
+
+            // Now, we can construct the new artifact path with the updated version
+            def newArtifactPath = "middlewaretalents-${ARTIFACT_VERSION}.zip"
+            echo "New artifact path: ${newArtifactPath}"
         }
     }
 }
+
 
 
         stage('Create .zip Archive') {
