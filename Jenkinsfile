@@ -32,22 +32,23 @@ pipeline {
                     // Debugging: Print Nexus URL and credentials
                     echo "Fetching versions from Nexus Repository at: ${NEXUS_URL}"
                     
-                    // Get the list of existing versions from Nexus
+                    // Get the latest version from Nexus by checking the existing artifact versions
                     def latestVersion = sh(script: """
                         echo "Fetching latest artifact version from Nexus..."
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X GET "${NEXUS_URL}${ARTIFACT_NAME}/" 2>&1 | tee output.txt
                         cat output.txt | jq -r '.[].version' | sort -V | tail -n 1
                     """, returnStdout: true).trim()
 
-                    // If jq is missing or fails, print the output for further investigation
+                    // If no version found, set the initial version to 1.0.1
                     if (!latestVersion) {
-                        echo "Error: Unable to fetch the latest version from Nexus. Output: $(cat output.txt)"
+                        ARTIFACT_VERSION = '1.0.1'
+                        echo "No version found. Setting initial version to: ${ARTIFACT_VERSION}"
                     } else {
-                        echo "Latest version found: ${latestVersion}"
                         // Increment the version by 0.0.1
-                        def newVersion = latestVersion.tokenize('.').collect { it.toInteger() }
-                        newVersion[-1] = newVersion[-1] + 1
-                        ARTIFACT_VERSION = newVersion.join('.')
+                        echo "Latest version found: ${latestVersion}"
+                        def versionParts = latestVersion.tokenize('.')
+                        versionParts[-1] = (versionParts[-1].toInteger() + 1).toString()  // Increment the patch version
+                        ARTIFACT_VERSION = versionParts.join('.')
                         echo "New Artifact Version: ${ARTIFACT_VERSION}"
                     }
                 }
@@ -145,7 +146,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
@@ -155,6 +155,7 @@ pipeline {
         }
     }
 }
+
 
 
 
