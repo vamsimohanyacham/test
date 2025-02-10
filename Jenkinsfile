@@ -306,7 +306,7 @@ pipeline {
                     echo "New version to be used: ${newVersion}"
 
                     // Set the new version as the ARTIFACT_VERSION
-                    ARTIFACT_VERSION = newVersion
+                    ARTIFACT_VERSION = 1.0.7
                 }
             }
         }
