@@ -4,11 +4,11 @@ pipeline {
     triggers {
         githubPush() // Trigger the pipeline on GitHub push events
     }
-    
+
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/service/rest/v1/search/assets'  // Nexus REST API URL for assets search
+        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
         NEXUS_USER = 'admin'  // Nexus Username
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
@@ -16,6 +16,7 @@ pipeline {
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
+        VERSION_FILE = 'version.txt'  // Version file to store versioning
     }
 
     stages {
@@ -40,41 +41,19 @@ pipeline {
         stage('Increment Version') {
             steps {
                 script {
-                    // Fetch the list of versions of the artifact from Nexus using the REST API
-                    def response = bat(script: """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s "${NEXUS_URL}?repository=dist&group=${GROUP_ID}&name=${ARTIFACT_NAME}"
-                    """, returnStdout: true).trim()
+                    // Read the current version from the version file
+                    def currentVersion = readFile('version.txt').trim()
+                    echo "Current version: ${currentVersion}"
 
-                    echo "Nexus Response: ${response}"
+                    // Increment the version (patch version)
+                    def versionParts = currentVersion.tokenize('.')
+                    def patchVersion = versionParts[-1].toInteger() + 1
+                    ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
-                    // Parse the response to find the latest version
-                    def versions = []
-                    def jsonResponse = readJSON text: response
+                    echo "New version: ${ARTIFACT_VERSION}"
 
-                    if (jsonResponse.items.isEmpty()) {
-                        // No artifact found, so initialize version to 1.0.0
-                        echo "No previous version found, initializing version to 1.0.0"
-                        ARTIFACT_VERSION = '1.0.0'
-                    } else {
-                        // Extract versions from the response
-                        jsonResponse.items.each { item ->
-                            def version = item.version
-                            versions.add(version)
-                        }
-
-                        // Sort the versions in descending order
-                        versions = versions.sort { a, b -> b <=> a }
-                        def latestVersion = versions[0] // Latest version from the list
-
-                        echo "Latest version in Nexus: ${latestVersion}"
-
-                        // Increment the patch version
-                        def versionParts = latestVersion.tokenize('.')
-                        def patchVersion = versionParts[-1].toInteger() + 1
-                        ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
-
-                        echo "New version: ${ARTIFACT_VERSION}"
-                    }
+                    // Update the version.txt file with the new version
+                    writeFile file: 'version.txt', text: ARTIFACT_VERSION
                 }
             }
         }
@@ -92,7 +71,7 @@ pipeline {
             steps {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def nexusRepositoryUrl = "http://localhost:8081/repository/dist/${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     bat """
                         echo Uploading ${artifactFile} to Nexus...
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
@@ -107,7 +86,7 @@ pipeline {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     echo "Downloading ${artifactFile} from Nexus..."
                     bat """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O http://localhost:8081/repository/dist/${artifactFile}
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
                     """
                 }
             }
@@ -139,7 +118,6 @@ pipeline {
         }
     }
 }
-
 
 
 
