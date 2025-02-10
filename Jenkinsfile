@@ -29,17 +29,27 @@ pipeline {
         stage('Fetch Latest Artifact Version from Nexus') {
             steps {
                 script {
+                    // Debugging: Print Nexus URL and credentials
+                    echo "Fetching versions from Nexus Repository at: ${NEXUS_URL}"
+                    
                     // Get the list of existing versions from Nexus
                     def latestVersion = sh(script: """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X GET "${NEXUS_URL}${ARTIFACT_NAME}/" | \
-                        jq -r '.[].version' | sort -V | tail -n 1
+                        echo "Fetching latest artifact version from Nexus..."
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X GET "${NEXUS_URL}${ARTIFACT_NAME}/" 2>&1 | tee output.txt
+                        cat output.txt | jq -r '.[].version' | sort -V | tail -n 1
                     """, returnStdout: true).trim()
 
-                    // Increment the version by 0.0.1
-                    def newVersion = latestVersion.tokenize('.').collect { it.toInteger() }
-                    newVersion[-1] = newVersion[-1] + 1
-                    ARTIFACT_VERSION = newVersion.join('.')
-                    echo "New Artifact Version: ${ARTIFACT_VERSION}"
+                    // If jq is missing or fails, print the output for further investigation
+                    if (!latestVersion) {
+                        echo "Error: Unable to fetch the latest version from Nexus. Output: $(cat output.txt)"
+                    } else {
+                        echo "Latest version found: ${latestVersion}"
+                        // Increment the version by 0.0.1
+                        def newVersion = latestVersion.tokenize('.').collect { it.toInteger() }
+                        newVersion[-1] = newVersion[-1] + 1
+                        ARTIFACT_VERSION = newVersion.join('.')
+                        echo "New Artifact Version: ${ARTIFACT_VERSION}"
+                    }
                 }
             }
         }
@@ -145,6 +155,7 @@ pipeline {
         }
     }
 }
+
 
 
 // pipeline {
