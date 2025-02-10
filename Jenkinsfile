@@ -1,10 +1,9 @@
 pipeline {
     agent any
-
+ 
     triggers {
         githubPush() // Trigger the pipeline on GitHub push events
     }
-    
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
@@ -19,53 +18,55 @@ pipeline {
         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
     }
-
+ 
     stages {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
             }
         }
-
+ 
         stage('Install Dependencies') {
             steps {
                 bat 'npm install'
             }
         }
-
+ 
         stage('Build Vite App') {
             steps {
                 bat 'npm run build'
             }
         }
-
+ 
         stage('Increment Version') {
             steps {
                 script {
-                    // Fetch the latest Git tag
-                    def currentVersion = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
+                    // Fetch the latest Git tag (if available)
+                    def currentVersion = bat(script: 'git describe --tags --abbrev=0', returnStdout: true).trim()
                     
-                    // If no tag exists, set a default version
+                    // If no tags exist, start from version 1.0.0
                     if (currentVersion == '') {
                         currentVersion = '1.0.0' // Default version if no tags are found
                     }
 
-                    // Split version into parts (major, minor, patch)
+                    // Split the current version into parts (major, minor, patch)
                     def versionParts = currentVersion.tokenize('.')
                     
-                    // Increment the patch version
+                    // Increment the patch version (last part)
                     def patchVersion = versionParts[-1].toInteger() + 1
                     ARTIFACT_VERSION = "${versionParts[0]}.${versionParts[1]}.${patchVersion}"
 
                     echo "New version: ${ARTIFACT_VERSION}"
                     
-                    // Tag the new version in Git
-                    sh "git tag ${ARTIFACT_VERSION}"
-                    sh "git push origin ${ARTIFACT_VERSION}"
+                    // Create a new Git tag for this version
+                    bat "git tag ${ARTIFACT_VERSION}"
+                    bat "git push origin ${ARTIFACT_VERSION}"
+
+                    echo "Created and pushed tag: ${ARTIFACT_VERSION}"
                 }
             }
         }
-
+        
         stage('Create .zip Archive') {
             steps {
                 script {
@@ -74,13 +75,12 @@ pipeline {
                 }
             }
         }
-
+ 
         stage('Upload to Nexus') {
             steps {
                 script {
                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
                     def nexusRepositoryUrl = "${NEXUS_URL}${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    
                     bat """
                         echo Uploading ${artifactFile} to Nexus...
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
@@ -88,7 +88,7 @@ pipeline {
                 }
             }
         }
-
+ 
         stage('Download Artifact from Nexus') {
             steps {
                 script {
@@ -100,7 +100,7 @@ pipeline {
                 }
             }
         }
-
+ 
         stage('Extract Artifact from Nexus') {
             steps {
                 script {
@@ -110,7 +110,7 @@ pipeline {
                 }
             }
         }
-
+ 
         stage('Move dist to Nginx Directory') {
             steps {
                 script {
@@ -120,14 +120,14 @@ pipeline {
             }
         }
     }
-
+ 
     post {
         always {
-            // Clean up any zip files after the build
             bat 'del /F /Q *.zip || true'
         }
     }
 }
+
 
 
 
