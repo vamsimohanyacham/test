@@ -378,7 +378,7 @@ pipeline {
     triggers {
         githubPush() // Trigger the pipeline on GitHub push events
     }
-    
+
     environment {
         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}"
@@ -452,6 +452,7 @@ pipeline {
                 }
             }
         }
+
         stage('Create ZIP File') {
             steps {
                 script {
@@ -459,7 +460,7 @@ pipeline {
                     bat 'powershell -Command "Compress-Archive -Path dist\\* -DestinationPath dist.zip"'
                 }
             }
-        }        
+        }
 
         stage('Upload to Nexus') {
             steps {
@@ -528,7 +529,7 @@ pipeline {
                 script {
                     // Use Azure CLI to deploy to Azure Web App
                     bat """
-                    az webapp deploy --resource-group vamsi --name vamsiweb --src-path dist.zip
+                    az webapp deploy --resource-group ${AZURE_RESOURCE_GROUP} --name ${AZURE_APP_NAME} --src-path dist.zip
                     """
                 }
             }
@@ -538,7 +539,7 @@ pipeline {
 
     post {
         always {
-            // This must be inside the node block
+            // Clean up ZIP files after the pipeline runs
             script {
                 bat 'del /F /Q *.zip || true'
             }
@@ -563,7 +564,3 @@ pipeline {
         }
     }
 }
-
-
-
-
