@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-      triggers {
+    triggers {
         githubPush() // Trigger the pipeline on GitHub push events
     }
     
@@ -109,17 +109,17 @@ pipeline {
             }
         }
 
-      stage('Move dist to Nginx Directory') {
-    steps {
-        script {
-            // Fix path by adding double quotes for spaces in path
-            bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
-            echo "Moved dist folder to Nginx directory"
+        stage('Move dist to Nginx Directory') {
+            steps {
+                script {
+                    // Fix path by adding double quotes for spaces in path
+                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+                    echo "Moved dist folder to Nginx directory"
+                }
+            }
         }
-    }
-}
 
-
+        // Uncomment when you want to enable Azure deployment:
         // stage('Login to Azure') {
         //     steps {
         //         script {
@@ -141,29 +141,31 @@ pipeline {
 
     post {
         always {
+            // Clean up ZIP files after the pipeline runs
             bat 'del /F /Q *.zip || true'
         }
         
-    //    success {
-    //         // Ensure recipient emails are set properly
-    //         emailext (
-    //             subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-    //             body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
-    //             to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
-    //             from: 'yaswanthkumarch2001@gmail.com'
-    //         )
-    //     }
+        // Uncomment and configure email notifications when needed
+        // success {
+        //     emailext (
+        //         subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
+        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
+        //         to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
+        //         from: 'yaswanthkumarch2001@gmail.com'
+        //     )
+        // }
  
-    //     failure {
-    //         emailext (
-    //             subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-    //             body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-    //             to: 'vamsimohanyacham@gmail.com',
-    //             from: 'yaswanthkumarch2001@gmail.com'
-    //         )
-    //     }
-    // }
+        // failure {
+        //     emailext (
+        //         subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
+        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
+        //         to: 'vamsimohanyacham@gmail.com',
+        //         from: 'yaswanthkumarch2001@gmail.com'
+        //     )
+        // }
+    }
 }
+
 
 // pipeline {
 //     agent any
