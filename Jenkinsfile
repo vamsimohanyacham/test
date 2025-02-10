@@ -12,7 +12,6 @@ pipeline {
         NEXUS_USER = 'admin'  // Nexus Username (Replace with your username)
         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password (Replace with your password)
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name (Replace with your artifact name)
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (Modify if needed)
         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID (Modify if needed)
         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Path to Nginx HTML directory (Modify if needed)
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group (Change this)
@@ -24,6 +23,24 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
+            }
+        }
+
+        stage('Fetch Latest Artifact Version from Nexus') {
+            steps {
+                script {
+                    // Get the list of existing versions from Nexus
+                    def latestVersion = sh(script: """
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X GET "${NEXUS_URL}${ARTIFACT_NAME}/" | \
+                        jq -r '.[].version' | sort -V | tail -n 1
+                    """, returnStdout: true).trim()
+
+                    // Increment the version by 0.0.1
+                    def newVersion = latestVersion.tokenize('.').collect { it.toInteger() }
+                    newVersion[-1] = newVersion[-1] + 1
+                    ARTIFACT_VERSION = newVersion.join('.')
+                    echo "New Artifact Version: ${ARTIFACT_VERSION}"
+                }
             }
         }
 
@@ -119,24 +136,6 @@ pipeline {
             }
         }
 
-        // Uncomment when you want to enable Azure deployment:
-        // stage('Login to Azure') {
-        //     steps {
-        //         script {
-        //             withCredentials([  // Access Azure secrets from GitHub's secret manager (Jenkins Credentials)
-        //                 string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'), 
-        //                 string(credentialsId: 'AZURE_CLIENT_SECRET', variable: 'AZURE_CLIENT_SECRET'), 
-        //                 string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID') 
-        //             ]) {
-        //                 // Azure login using service principal
-        //                 bat """
-        //                     az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
-        //                 """
-        //             }
-        //         }
-        //     }
-        // }
-
     }
 
     post {
@@ -144,25 +143,6 @@ pipeline {
             // Clean up ZIP files after the pipeline runs
             bat 'del /F /Q *.zip || true'
         }
-        
-        // Uncomment and configure email notifications when needed
-        // success {
-        //     emailext (
-        //         subject: "Deployment Successful: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} was successful! You can now check the Nginx server to verify the update.",
-        //         to: 'vamsi@middlewaretalents.com',  // Ensure email is not empty
-        //         from: 'yaswanthkumarch2001@gmail.com'
-        //     )
-        // }
- 
-        // failure {
-        //     emailext (
-        //         subject: "Deployment Failed: ${ARTIFACT_NAME}-${ARTIFACT_VERSION}",
-        //         body: "The deployment of the artifact ${ARTIFACT_NAME}-${ARTIFACT_VERSION} has failed. Please check the Jenkins logs for details.",
-        //         to: 'vamsimohanyacham@gmail.com',
-        //         from: 'yaswanthkumarch2001@gmail.com'
-        //     )
-        // }
     }
 }
 
