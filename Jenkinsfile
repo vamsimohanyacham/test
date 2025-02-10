@@ -6,14 +6,11 @@ pipeline {
     }
     
     stages {
-        
-        // Checkout the code from Git repository
-        stage('Checkout Code') {
-            steps {
-                // Clone the Git repository (Ensure the Git Plugin is installed)
-                git branch: 'main', url: 'https://github.com/your/repo.git', credentialsId: 'your-credentials-id'
-            }
-        }
+       stage('Checkout Code') {
+             steps {
+                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
+             }
+         }
 
         // Install dependencies using npm
         stage('Install Dependencies') {
