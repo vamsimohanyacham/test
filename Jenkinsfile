@@ -80,7 +80,7 @@ pipeline {
                     }
 
                     // Now check for LTS flag after incrementing version
-                    if (IS_LTS) {
+                    if (false) {
                         ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS if flag is true
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
                     } else {
