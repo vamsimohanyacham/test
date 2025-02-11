@@ -6,7 +6,7 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'IS_LTS', defaultValue: false, description: 'Mark this version as LTS')
+        booleanParam(name: 'IS_LTS', defaultValue: true, description: 'Mark this version as LTS')
     }
 
     environment {
@@ -153,9 +153,22 @@ pipeline {
             script {
                 echo "Pipeline failed, deploying the last LTS version..."
 
-                // Fetch the last LTS version
+                // Fetch the last LTS version from Nexus
                 def ltsVersion = getLastLTSVersion()
                 echo "Last LTS Version: ${ltsVersion}"
+
+                if (!ltsVersion) {
+                    echo "No LTS version found, creating a new LTS version..."
+                    // Mark the current version as LTS if no LTS exists
+                    ARTIFACT_VERSION += "-LTS"
+                    echo "New LTS version created: ${ARTIFACT_VERSION}"
+                    // Upload the new LTS version to Nexus
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    bat """
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${NEXUS_URL}${artifactFile}
+                    """
+                    ltsVersion = ARTIFACT_VERSION // Use the newly created LTS version
+                }
 
                 // Download the LTS version
                 def artifactFile = "${ARTIFACT_NAME}-${ltsVersion}.zip"
@@ -190,10 +203,11 @@ pipeline {
             }
         }
 
-        // Return the latest LTS version (highest version)
-        return ltsVersionList.sort().last()
+        // If no LTS versions found, return null
+        return ltsVersionList.size() > 0 ? ltsVersionList.sort().last() : null
     }
 }
+
 
 
 
