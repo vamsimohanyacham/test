@@ -81,7 +81,7 @@ pipeline {
 
                     // Mark version as LTS if it matches specific criteria, e.g., 1.0.x
                     if (ARTIFACT_VERSION.startsWith('1.0.')) {
-                        IS_LTS = true
+                        IS_LTS = false
                         ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS instead of parentheses
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
                     } else {
