@@ -82,8 +82,10 @@ pipeline {
                     // Mark version as LTS if it matches specific criteria, e.g., 1.0.x
                     if (ARTIFACT_VERSION.startsWith('1.0.')) {
                         IS_LTS = true
-                        ARTIFACT_VERSION = "${ARTIFACT_VERSION} (LTS)"
+                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS instead of parentheses
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
+                    } else {
+                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}.zip"
                     }
                 }
             }
@@ -93,7 +95,7 @@ pipeline {
             steps {
                 script {
                     def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    // Use quotes to avoid errors with parentheses in the version name
+                    // Use double quotes to handle special characters correctly
                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath \"${zipFileName}\""
                     echo "Created ${zipFileName}"
                 }
@@ -172,8 +174,6 @@ pipeline {
         }
     }
 }
-
-
 
 
 
