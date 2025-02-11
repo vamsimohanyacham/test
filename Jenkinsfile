@@ -30,7 +30,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm install'
+                bat 'npm instll'
             }
         }
 
@@ -163,27 +163,266 @@ pipeline {
         }
         failure {
             script {
-                echo "Pipeline failed, deploying the first version (1.0.1)..."
+                echo "Pipeline failed, deploying the latest LTS version..."
 
-                // Download the first version (1.0.1)
-                def firstVersion = '1.0.1'
-                def artifactFile = "${ARTIFACT_NAME}-${firstVersion}.zip"
-                echo "Downloading ${artifactFile} from Nexus..."
-                bat """
-                    curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
-                """
+                // Fetch the list of artifacts from Nexus repository
+                def artifactUrl = "http://localhost:8081/#browse/browse:dist"
+                echo "Fetching versions from Nexus repository: ${artifactUrl}"
 
-                echo "Extracting ${ARTIFACT_NAME}-${firstVersion}.zip..."
-                bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${firstVersion}.zip -DestinationPath ."
-                echo "Artifact extracted"
+                // Get all available versions from Nexus
+                def response = bat(script: "curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s \"http://localhost:8081/service/rest/v1/search?repository=dist\"", returnStdout: true).trim()
+                echo "Nexus Response: ${response}"
 
-                echo "Moving dist folder for version 1.0.1 to Nginx directory..."
-                bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
-                echo "Deployed version 1.0.1 to Nginx"
+                // Extract LTS version numbers from the response
+                def ltsVersionList = []
+                response.split('\n').each { line ->
+                    if (line.contains("${ARTIFACT_NAME}-") && line.contains("-LTS")) {
+                        def versionMatch = (line =~ /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)-LTS/)
+                        if (versionMatch) {
+                            ltsVersionList.add(versionMatch[0][1])
+                        }
+                    }
+                }
+
+                // If LTS versions are found, get the latest one
+                if (ltsVersionList.size() > 0) {
+                    def latestLTSVersion = ltsVersionList.sort().last()
+                    echo "Latest LTS version found: ${latestLTSVersion}"
+
+                    // Set the artifact version to the latest LTS version
+                    ARTIFACT_VERSION = "${latestLTSVersion}-LTS"
+                    echo "Deploying latest LTS version: ${ARTIFACT_VERSION}"
+
+                    // Download the LTS artifact from Nexus
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    echo "Downloading ${artifactFile} from Nexus..."
+                    bat """
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
+                    """
+
+                    // Extract the artifact
+                    echo "Extracting ${artifactFile}..."
+                    bat "powershell Expand-Archive -Path ${artifactFile} -DestinationPath ."
+                    echo "Artifact extracted"
+
+                    // Move the dist folder to Nginx directory
+                    echo "Moving dist folder to Nginx directory..."
+                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+                    echo "Deployed ${artifactFile} to Nginx"
+                } else {
+                    echo "No LTS version found in Nexus, deploying the first version (1.0.1)..."
+
+                    // Fallback to the first version if no LTS version found
+                    def firstVersion = '1.0.1'
+                    def artifactFile = "${ARTIFACT_NAME}-${firstVersion}.zip"
+                    echo "Downloading ${artifactFile} from Nexus..."
+                    bat """
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
+                    """
+
+                    // Extract the artifact
+                    echo "Extracting ${ARTIFACT_NAME}-${firstVersion}.zip..."
+                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${firstVersion}.zip -DestinationPath ."
+                    echo "Artifact extracted"
+
+                    // Move the dist folder to Nginx directory
+                    echo "Moving dist folder for version 1.0.1 to Nginx directory..."
+                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+                    echo "Deployed version 1.0.1 to Nginx"
+                }
             }
         }
     }
 }
+
+
+
+// pipeline {
+//     agent any
+
+//     triggers {
+//         githubPush() // Trigger the pipeline on GitHub push events
+//     }
+
+//     environment {
+//         NODE_HOME = tool 'nodejs'  // Use the NodeJS configured in Jenkins
+//         PATH = "${NODE_HOME}/bin:${env.PATH}"
+//         NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
+//         NEXUS_USER = 'admin'  // Nexus Username
+//         NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
+//         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
+//         ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
+//         GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
+//         NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
+//         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
+//         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
+//         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
+//         IS_LTS = 'true'  // Flag to determine if this version is LTS
+//     }
+
+//     stages {
+//         stage('Checkout Code') {
+//             steps {
+//                 git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
+//             }
+//         }
+
+//         stage('Install Dependencies') {
+//             steps {
+//                 bat 'npm install'
+//             }
+//         }
+
+//         stage('Build Vite App') {
+//             steps {
+//                 bat 'npm run build'
+//             }
+//         }
+
+//         stage('Increment Version') {
+//             steps {
+//                 script {
+//                     // Fetch the list of artifacts from Nexus repository
+//                     def artifactUrl = "http://localhost:8081/#browse/browse:dist"
+//                     echo "Fetching versions from Nexus repository: ${artifactUrl}"
+
+//                     // Get all available versions from Nexus
+//                     def response = bat(script: "curl -u admin:vamsi@123 -s \"http://localhost:8081/service/rest/v1/search?repository=dist\"", returnStdout: true).trim()            
+//                     echo "Nexus Response: ${response}"
+
+//                     // Extract version numbers from the response
+//                     def versionList = []
+//                     response.split('\n').each { line ->
+//                         if (line.contains("${ARTIFACT_NAME}-")) {
+//                             def versionMatch = (line =~ /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)/)
+//                             if (versionMatch) {
+//                                 versionList.add(versionMatch[0][1])
+//                             }
+//                         }
+//                     }
+
+//                     // Sort and find the latest version (highest patch version)
+//                     def latestVersion = '1.0.0'  // Default if no versions are found
+//                     if (versionList.size() > 0) {
+//                         latestVersion = versionList.sort().last()
+//                     }
+//                     echo "Latest version found in Nexus: ${latestVersion}"
+
+//                     // Split version into major, minor, patch
+//                     def versionParts = latestVersion.tokenize('.')
+//                     def major = versionParts[0].toInteger()
+//                     def minor = versionParts[1].toInteger()
+//                     def patch = versionParts[2].toInteger()
+
+//                     // Check if the minor version should be incremented
+//                     if (minor == 0) {
+//                         // If the minor version is 0 (e.g., 1.0.x), increment to 1.1.0
+//                         minor = 1
+//                         patch = 0
+//                     } else {
+//                         // Otherwise, increment the patch version
+//                         patch += 1
+//                     }
+
+//                     // Construct the new version
+//                     ARTIFACT_VERSION = "${major}.${minor}.${patch}"
+
+//                     echo "New incremented version: ${ARTIFACT_VERSION}"
+
+//                     // Now check for LTS flag after incrementing version
+//                     if (IS_LTS == 'true') {
+//                         ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS if flag is true
+//                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
+//                     } else {
+//                         echo "Version is a normal artifact: ${ARTIFACT_VERSION}"
+//                     }
+//                 }
+//             }
+//         }
+
+//         stage('Create .zip Archive') {
+//             steps {
+//                 script {
+//                     def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+//                     // Use double quotes to handle special characters correctly
+//                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath \"${zipFileName}\""
+//                     echo "Created ${zipFileName}"
+//                 }
+//             }
+//         }
+
+//         stage('Upload to Nexus') {
+//             steps {
+//                 script {
+//                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+//                     def nexusRepositoryUrl = "${NEXUS_URL}${artifactFile}"
+//                     bat """
+//                         echo Uploading ${artifactFile} to Nexus...
+//                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
+//                     """
+//                 }
+//             }
+//         }
+
+//         stage('Download Artifact from Nexus') {
+//             steps {
+//                 script {
+//                     def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+//                     echo "Downloading ${artifactFile} from Nexus..."
+//                     bat """
+//                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
+//                     """
+//                 }
+//             }
+//         }
+
+//         stage('Extract Artifact from Nexus') {
+//             steps {
+//                 script {
+//                     echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
+//                     bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
+//                     echo "Artifact extracted"
+//                 }
+//             }
+//         }
+
+//         stage('Move dist to Nginx Directory') {
+//             steps {
+//                 script {
+//                     bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+//                     echo "Moved dist folder to Nginx directory"
+//                 }
+//             }
+//         }
+//     }
+
+//     post {
+//         always {
+//             bat 'del /F /Q *.zip || true'
+//         }
+//         failure {
+//             script {
+//                 echo "Pipeline failed, deploying the first version (1.0.1)..."
+
+//                 // Download the first version (1.0.1)
+//                 def firstVersion = '1.0.1'
+//                 def artifactFile = "${ARTIFACT_NAME}-${firstVersion}.zip"
+//                 echo "Downloading ${artifactFile} from Nexus..."
+//                 bat """
+//                     curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
+//                 """
+
+//                 echo "Extracting ${ARTIFACT_NAME}-${firstVersion}.zip..."
+//                 bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${firstVersion}.zip -DestinationPath ."
+//                 echo "Artifact extracted"
+
+//                 echo "Moving dist folder for version 1.0.1 to Nginx directory..."
+//                 bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+//                 echo "Deployed version 1.0.1 to Nginx"
+//             }
+//         }
+//     }
+// }
 
 
 
