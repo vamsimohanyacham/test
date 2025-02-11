@@ -82,8 +82,10 @@ pipeline {
                     // Mark version as LTS if it matches specific criteria, e.g., 1.0.x
                     if (ARTIFACT_VERSION.startsWith('1.0.')) {
                         IS_LTS = true
-                        ARTIFACT_VERSION = "${ARTIFACT_VERSION} (LTS)"
+                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}.zip(LTS)"
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
+                    } else {
+                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}.zip"
                     }
                 }
             }
@@ -92,7 +94,7 @@ pipeline {
         stage('Create .zip Archive') {
             steps {
                 script {
-                    def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}"
                     // Use quotes to avoid errors with parentheses in the version name
                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath \"${zipFileName}\""
                     echo "Created ${zipFileName}"
@@ -103,7 +105,7 @@ pipeline {
         stage('Upload to Nexus') {
             steps {
                 script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}"
                     def nexusRepositoryUrl = "${NEXUS_URL}${artifactFile}"
                     bat """
                         echo Uploading ${artifactFile} to Nexus...
@@ -116,7 +118,7 @@ pipeline {
         stage('Download Artifact from Nexus') {
             steps {
                 script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}"
                     echo "Downloading ${artifactFile} from Nexus..."
                     bat """
                         curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -O ${NEXUS_URL}${artifactFile}
@@ -128,8 +130,8 @@ pipeline {
         stage('Extract Artifact from Nexus') {
             steps {
                 script {
-                    echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip..."
-                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip -DestinationPath ."
+                    echo "Extracting ${ARTIFACT_NAME}-${ARTIFACT_VERSION}..."
+                    bat "powershell Expand-Archive -Path ${ARTIFACT_NAME}-${ARTIFACT_VERSION} -DestinationPath ."
                     echo "Artifact extracted"
                 }
             }
@@ -172,6 +174,7 @@ pipeline {
         }
     }
 }
+
 
 
 
