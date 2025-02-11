@@ -79,13 +79,12 @@ pipeline {
                         echo "No versions found, starting with version: ${ARTIFACT_VERSION}"
                     }
 
-                    // Mark version as LTS if it matches specific criteria, e.g., 1.0.x
-                    if (ARTIFACT_VERSION.startsWith('1.0.')) {
-                        IS_LTS = false
-                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS instead of parentheses
+                    // Append LTS if IS_LTS is true
+                    if (IS_LTS) {
+                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS if flag is true
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
                     } else {
-                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}.zip"
+                        echo "Version is a normal artifact: ${ARTIFACT_VERSION}"
                     }
                 }
             }
@@ -174,6 +173,7 @@ pipeline {
         }
     }
 }
+
 
 
 
