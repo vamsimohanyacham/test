@@ -188,7 +188,6 @@ pipeline {
 
                 // Get all available versions from Nexus
                 def response = sh(script: "curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s \"http://52.141.28.58:8081/service/rest/v1/search?repository=distn\"", returnStdout: true).trim()
-                echo "Nexus Response: ${response}"
 
                 // Extract LTS version numbers from the response
                 def ltsVersionList = []
