@@ -30,7 +30,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm instal'
+                bat 'npm inal'
             }
         }
 
