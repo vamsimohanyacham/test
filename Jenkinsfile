@@ -79,7 +79,7 @@ pipeline {
                         echo "No versions found, starting with version: ${ARTIFACT_VERSION}"
                     }
 
-                    // Append LTS if IS_LTS is true
+                    // Now check for LTS flag after incrementing version
                     if (IS_LTS) {
                         ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS if flag is true
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
