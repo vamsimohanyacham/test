@@ -95,7 +95,7 @@ pipeline {
             steps {
                 script {
                     def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}"
-                    // Use quotes to avoid errors with parentheses in the version name
+                    // Use double quotes to handle parentheses correctly
                     bat "powershell Compress-Archive -Path dist\\* -DestinationPath \"${zipFileName}\""
                     echo "Created ${zipFileName}"
                 }
@@ -174,6 +174,7 @@ pipeline {
         }
     }
 }
+
 
 
 
