@@ -18,7 +18,7 @@ pipeline {
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
-        IS_LTS = false  // Flag to determine if this version is LTS
+        IS_LTS = 'false'  // Flag to determine if this version is LTS
     }
 
     stages {
@@ -80,7 +80,7 @@ pipeline {
                     }
 
                     // Now check for LTS flag after incrementing version
-                    if (false) {
+                    if (IS_LTS == 'true') {
                         ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"  // Appending -LTS if flag is true
                         echo "Marking this version as LTS: ${ARTIFACT_VERSION}"
                     } else {
