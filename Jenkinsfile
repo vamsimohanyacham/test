@@ -14,7 +14,7 @@ pipeline {
         AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
         AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
         ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
-        IS_LTS = 'false'  // Flag to determine if this version is LTS
+        IS_LTS = 'true'  // Flag to determine if this version is LTS
     }
 
     stages {
