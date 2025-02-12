@@ -43,65 +43,137 @@ pipeline {
         }
 
         stage('Increment Version') {
-            steps {
-                script {
-                    // Fetch the list of artifacts from Nexus repository
-                    def artifactUrl = "http://52.141.28.58:8081/#browse/browse:distn"
-                    echo "Fetching versions from Nexus repository: ${artifactUrl}"
+    steps {
+        script {
+            // Define Nexus repository URL and credentials
+            def nexusUrl = "http://52.141.28.58:8081/service/rest/v1/search?repository=distn"
+            def artifactUrl = "http://52.141.28.58:8081/#browse/browse:distn"
+            echo "Fetching versions from Nexus repository: ${artifactUrl}"
 
-                    // Get all available versions from Nexus
-                    def response = sh(script: "curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s \"http://52.141.28.58:8081/service/rest/v1/search?repository=distn\"", returnStdout: true).trim()
-                   
+            // Get the list of artifacts and versions from Nexus using curl
+            def response = sh(script: "curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s \"${nexusUrl}\"", returnStdout: true).trim()
 
-                    // Extract the artifact versions from the response
-                    def versionList = []
-                    response.split('\n').each { line ->
-                        if (line.contains("${ARTIFACT_NAME}-")) {
-                            def versionMatch = (line =~ /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)(-LTS)?\.zip/)
-                            if (versionMatch) {
-                                versionList.add(versionMatch[0][1]) // Collect normal version (without LTS)
-                            }
-                        }
-                    }
-
-                    // If no versions found, start with 1.0.1
-                    if (versionList.isEmpty()) {
-                        echo "No versions found in Nexus, starting with version: 1.0.1"
-                        ARTIFACT_VERSION = '1.0.1'
-                    } else {
-                        // Sort and find the latest version
-                        def latestVersion = versionList.sort().last()
-                        echo "Latest version found: ${latestVersion}"
-
-                        // Split version into major, minor, patch
-                        def versionParts = latestVersion.tokenize('.')
-                        def major = versionParts[0].toInteger()
-                        def minor = versionParts[1].toInteger()
-                        def patch = versionParts[2].toInteger()
-
-                        // If patch is 9, increment the minor version and reset patch to 0
-                        if (patch == 9) {
-                            minor += 1
-                            patch = 0
-                        } else {
-                            patch += 1
-                        }
-                        ARTIFACT_VERSION = "${major}.${minor}.${patch}"
-                        echo "Incremented version to: ${ARTIFACT_VERSION}"
-                    }
-
-                    // Handle LTS versions separately if IS_LTS is true
-                    echo "IS_LTS value: ${IS_LTS}"
-
-                    if (IS_LTS == 'true' || IS_LTS.toString() == 'true') {
-                        ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"
-                        echo "LTS version detected. Version updated to: ${ARTIFACT_VERSION}"
-                    } else {
-                        echo "Non-LTS version detected. Version remains as: ${ARTIFACT_VERSION}"
+            // Initialize version list
+            def versionList = []
+            
+            // Process the response and extract the versions
+            response.split('\n').each { line ->
+                if (line.contains("${ARTIFACT_NAME}-")) {
+                    // Regular expression to match version pattern (e.g., 1.0.0 or 1.0.0-LTS)
+                    def versionMatch = (line =~ /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)(-LTS)?\.zip/)
+                    if (versionMatch) {
+                        versionList.add(versionMatch[0][1]) // Collect normal version (without LTS)
                     }
                 }
             }
+
+            // If no versions found, start with 1.0.1
+            if (versionList.isEmpty()) {
+                echo "No versions found in Nexus, starting with version: 1.0.1"
+                ARTIFACT_VERSION = '1.0.1'
+            } else {
+                // Sort versions and find the latest one
+                def latestVersion = versionList.sort().last()
+                echo "Latest version found: ${latestVersion}"
+
+                // Split the latest version into major, minor, patch parts
+                def versionParts = latestVersion.tokenize('.')
+                def major = versionParts[0].toInteger()
+                def minor = versionParts[1].toInteger()
+                def patch = versionParts[2].toInteger()
+
+                // Increment the patch version, and handle minor and major version increment
+                if (patch == 9) {
+                    minor += 1
+                    patch = 0
+                } else {
+                    patch += 1
+                }
+
+                if (minor == 9) {
+                    major += 1
+                    minor = 0
+                }
+
+                // Set the artifact version to the incremented version
+                ARTIFACT_VERSION = "${major}.${minor}.${patch}"
+                echo "Incremented version to: ${ARTIFACT_VERSION}"
+            }
+
+            // Handle LTS versions separately if IS_LTS is true
+            echo "IS_LTS value: ${IS_LTS}"
+
+            if (IS_LTS == 'true' || IS_LTS.toString() == 'true') {
+                ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"
+                echo "LTS version detected. Version updated to: ${ARTIFACT_VERSION}"
+            } else {
+                echo "Non-LTS version detected. Version remains as: ${ARTIFACT_VERSION}"
+            }
         }
+    }
+}
+
+
+        // stage('Increment Version') {
+        //     steps {
+        //         script {
+        //             // Fetch the list of artifacts from Nexus repository
+        //             def artifactUrl = "http://52.141.28.58:8081/#browse/browse:distn"
+        //             echo "Fetching versions from Nexus repository: ${artifactUrl}"
+
+        //             // Get all available versions from Nexus
+        //             def response = sh(script: "curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -s \"http://52.141.28.58:8081/service/rest/v1/search?repository=distn\"", returnStdout: true).trim()
+                   
+
+        //             // Extract the artifact versions from the response
+        //             def versionList = []
+        //             response.split('\n').each { line ->
+        //                 if (line.contains("${ARTIFACT_NAME}-")) {
+        //                     def versionMatch = (line =~ /${ARTIFACT_NAME}-(\d+\.\d+\.\d+)(-LTS)?\.zip/)
+        //                     if (versionMatch) {
+        //                         versionList.add(versionMatch[0][1]) // Collect normal version (without LTS)
+        //                     }
+        //                 }
+        //             }
+
+        //             // If no versions found, start with 1.0.1
+        //             if (versionList.isEmpty()) {
+        //                 echo "No versions found in Nexus, starting with version: 1.0.1"
+        //                 ARTIFACT_VERSION = '1.0.1'
+        //             } else {
+        //                 // Sort and find the latest version
+        //                 def latestVersion = versionList.sort().last()
+        //                 echo "Latest version found: ${latestVersion}"
+
+        //                 // Split version into major, minor, patch
+        //                 def versionParts = latestVersion.tokenize('.')
+        //                 def major = versionParts[0].toInteger()
+        //                 def minor = versionParts[1].toInteger()
+        //                 def patch = versionParts[2].toInteger()
+
+        //                 // If patch is 9, increment the minor version and reset patch to 0
+        //                 if (patch == 9) {
+        //                     minor += 1
+        //                     patch = 0
+        //                 } else {
+        //                     patch += 1
+        //                 }
+        //                 ARTIFACT_VERSION = "${major}.${minor}.${patch}"
+        //                 echo "Incremented version to: ${ARTIFACT_VERSION}"
+        //             }
+
+        //             // Handle LTS versions separately if IS_LTS is true
+        //             echo "IS_LTS value: ${IS_LTS}"
+
+        //             if (IS_LTS == 'true' || IS_LTS.toString() == 'true') {
+        //                 ARTIFACT_VERSION = "${ARTIFACT_VERSION}-LTS"
+        //                 echo "LTS version detected. Version updated to: ${ARTIFACT_VERSION}"
+        //             } else {
+        //                 echo "Non-LTS version detected. Version remains as: ${ARTIFACT_VERSION}"
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Create .zip Archive') {
             steps {
