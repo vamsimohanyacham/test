@@ -86,13 +86,6 @@ pipeline {
                         } else {
                             patch += 1
                         }
-                        if (minor == 9) {
-                            major += 1
-                            minor = 0
-                        } else {
-                            minor += 1
-                        }
-
                         ARTIFACT_VERSION = "${major}.${minor}.${patch}"
                         echo "Incremented version to: ${ARTIFACT_VERSION}"
                     }
