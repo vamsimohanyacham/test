@@ -3,7 +3,7 @@ name: Versioning and Publish
 on:
   push:
     branches:
-      - main  # Trigger the workflow on push to the 'main' branch
+      - main  # Trigger on push to 'main' branch
 
 jobs:
   versioning:
@@ -16,10 +16,10 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'  # Set the desired Node.js version
+        node-version: '16'  # Set the Node.js version you want to use
 
     - name: Install dependencies
-      run: npm install  # Install dependencies in your package.json
+      run: npm install  # Install your project's dependencies
 
     - name: Clean git working directory
       run: |
@@ -29,26 +29,23 @@ jobs:
     - name: Set git user for commit
       run: |
         git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"  # Set up the Git author
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
     - name: Automatically increment version (patch)
       run: |
-        # Automatically increment the version (patch by default, change to 'minor' or 'major' as needed)
         npm version patch -m "Bump version to %s"  # This updates package.json and creates a new commit
         git status  # Verify that there are changes to commit
 
     - name: Commit changes and push to GitHub
       run: |
-        # Add all changes (including version bump) and commit them
-        git add package.json package-lock.json  # Ensure package files are committed
+        git add package.json package-lock.json
         git commit -m "Automated version bump" || echo "No changes to commit"
         git push origin main --tags  # Push the commit and new tag to GitHub
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use your GitHub token for authentication
+        GITHUB_TOKEN: ${{ secrets.NODE_AUTH_TOKEN  }}  # Use GitHub token for authentication
 
     - name: Publish the new version to GitHub Packages
       run: |
-        # Publish the updated version to GitHub Packages (or npm registry)
-        npm publish --registry https://npm.pkg.github.com  # Change to npm registry if needed
+        npm publish --registry https://npm.pkg.github.com  # Publish the package to GitHub Packages
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use your GitHub token for publishing
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use GitHub token for publishing
