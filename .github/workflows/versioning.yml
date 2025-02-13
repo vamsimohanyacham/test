@@ -35,12 +35,13 @@ jobs:
       run: |
         # Automatically increment the version (patch by default, change to 'minor' or 'major' as needed)
         npm version patch -m "Bump version to %s"  # This updates package.json and creates a new commit
+        git status  # Verify that there are changes to commit
 
     - name: Commit changes and push to GitHub
       run: |
         # Add all changes (including version bump) and commit them
         git add package.json package-lock.json  # Ensure package files are committed
-        git commit -m "Automated version bump"
+        git commit -m "Automated version bump" || echo "No changes to commit"
         git push origin main --tags  # Push the commit and new tag to GitHub
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use your GitHub token for authentication
