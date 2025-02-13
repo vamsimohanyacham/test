@@ -40,13 +40,12 @@ jobs:
       # Step 6: Check current version in package.json
       - name: Check current version in package.json
         run: |
-          echo "Current version: $(jq -r .version package.json)"
+          echo "Current version in package.json: $(jq -r .version package.json)"
 
       # Step 7: Run Version Bump
       - name: Run version bump
         id: version_bump
         run: |
-          # Check if the commit message includes "lts"
           echo "Commit message: $GITHUB_EVENT_HEAD_COMMIT_MESSAGE"
           if [[ "${GITHUB_EVENT_HEAD_COMMIT_MESSAGE}" == *"lts"* ]]; then
             echo "LTS flag detected. Bumping LTS version."
@@ -56,15 +55,20 @@ jobs:
             npm version patch -m "Automated version bump to %s"
           fi
 
-      # Step 8: Check for changes to commit
+      # Step 8: Run npm install to update package-lock.json
+      - name: Run npm install to update package-lock.json
+        run: npm install
+
+      # Step 9: Check for changes to commit
       - name: Check for changes to commit
         run: |
           git diff --exit-code || echo "Changes detected in package.json or package-lock.json"
 
-      # Step 9: Commit version bump changes if needed
+      # Step 10: Commit version bump changes if needed
       - name: Commit changes if there are updates
         run: |
           if [[ $(git status --porcelain) ]]; then
+            echo "Committing version bump changes."
             git add package.json package-lock.json
             git commit -m "Automated version bump"
             git push origin main
@@ -72,7 +76,7 @@ jobs:
             echo "No changes detected, skipping commit and push."
           fi
 
-      # Step 10: Handle errors and ensure latest LTS version if needed
+      # Step 11: Handle errors and ensure latest LTS version if needed
       - name: Handle errors and ensure LTS version (if failure)
         if: failure()
         run: |
