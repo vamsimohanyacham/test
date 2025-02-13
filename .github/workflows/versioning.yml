@@ -36,8 +36,9 @@ jobs:
         run: |
           git reset --hard
           git clean -fd
+          git status
           # Ensure node_modules are not tracked or modified
-          git rm -r --cached node_modules
+          git rm -r --cached node_modules || echo "No node_modules to remove"
           echo "Removed node_modules changes from git."
 
       # Step 6: Run Version Bump
