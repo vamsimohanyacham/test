@@ -1,4 +1,37 @@
-      # Step 5: Clean git working directory and remove node_modules changes
+name: Auto Version Bump and LTS Support
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger if needed
+
+jobs:
+  version_bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js (adjust to your preferred version)
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Set your Node.js version
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Set Git user identity (required for committing)
+      - name: Set Git user identity
+        run: |
+          git config --global user.name "Automated Commit"
+          git config --global user.email "action@github.com"
+
+      # Step 5: Clean git working directory and node_modules changes
       - name: Clean git working directory and node_modules changes
         run: |
           git reset --hard
@@ -26,3 +59,25 @@
       - name: Check for changes to commit
         run: |
           git status --porcelain | grep -v 'node_modules' || echo "Changes detected in package.json or package-lock.json"
+
+      # Step 9: Commit version bump changes if needed
+      - name: Commit changes if there are updates
+        run: |
+          if [[ $(git status --porcelain) ]]; then
+            echo "Committing version bump changes."
+            git add package.json package-lock.json
+            git commit -m "Automated version bump"
+            git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+          else
+            echo "No changes detected, skipping commit and push."
+          fi
+
+      # Step 10: Handle errors and ensure LTS version if needed
+      - name: Handle errors and ensure LTS version (if failure)
+        if: failure()
+        run: |
+          echo "Error detected, applying latest LTS version."
+          npm version patch --preid "lts" -m "Automated version bump to latest LTS"
+          git add package.json package-lock.json
+          git commit -m "Automated LTS version bump"
+          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
