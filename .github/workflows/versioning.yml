@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main  # Trigger the workflow on push to the 'main' branch
-    # Optional: Trigger on other branches if needed
-    tags:
-      - 'v*'  # You can still trigger with version tags if you want
 
 jobs:
   versioning:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -25,13 +23,13 @@ jobs:
 
     - name: Increment version
       run: |
-        # Auto-increment the version on every push. You can use patch, minor, or major
-        npm version patch -m "Bump version to %s"  # You can change 'patch' to 'minor' or 'major' if needed
+        # Increment version using npm version (patch, minor, major) 
+        npm version patch -m "Bump version to %s"  # Change 'patch' to 'minor' or 'major' if needed
 
     - name: Push version tag and changes
       run: |
-        # Push the changes and the new tag back to GitHub
-        git push --follow-tags  # This pushes both the commit and the new version tag
+        # Push both the commit and the new tag to GitHub
+        git push --follow-tags origin main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for authentication
 
@@ -66,4 +64,3 @@ jobs:
         npm publish --registry https://npm.pkg.github.com
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
