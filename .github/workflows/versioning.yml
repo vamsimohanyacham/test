@@ -58,7 +58,7 @@ jobs:
       - name: Run npm install to update package-lock.json
         run: npm install
 
-      # Step 8: Check for changes to commit (Exclude node_modules)
+      # Step 8: Check for changes to commit (package.json, package-lock.json)
       - name: Check for changes to commit (package.json, package-lock.json)
         run: |
           git status --porcelain | grep -E 'package.json|package-lock.json' || echo "No relevant changes detected."
