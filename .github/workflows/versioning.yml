@@ -1,11 +1,9 @@
-name: Versioning and Publish with LTS Failover
+name: Versioning and Publish
 
 on:
   push:
     branches:
-      - main  # Trigger on push to 'main' branch
-    tags:
-      - 'v*'  # Trigger when a version tag is created (v1.0.0, v1.1.0, etc.)
+      - main  # Trigger the workflow on push to the 'main' branch
 
 jobs:
   versioning:
@@ -18,62 +16,29 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'  # Adjust to the desired Node.js version
+        node-version: '16'  # Set the desired Node.js version
 
     - name: Install dependencies
-      run: npm install
+      run: npm install  # Install dependencies in your package.json
 
-    - name: Ensure git is clean
-      run: |
-        # Check if there are uncommitted changes
-        git status
-        git diff
-        git diff --cached
-        git add . || echo "No changes to commit"
-        git commit -m "Committing changes before versioning" || echo "No changes to commit"
-        git status  # To ensure there are no uncommitted changes
-
-    - name: Increment version (patch)
+    - name: Automatically increment version (patch)
       run: |
         # Automatically increment the version (patch by default, change to 'minor' or 'major' as needed)
         npm version patch -m "Bump version to %s"  # This updates package.json and creates a new commit
 
-    - name: Push version tag and changes to GitHub
+    - name: Commit changes and push to GitHub
       run: |
-        # Push the commit and the new tag to GitHub
-        git push origin main --tags
+        # Add all changes (including version bump) and commit them
+        git add package.json package-lock.json  # Ensure package files are committed
+        git commit -m "Automated version bump"
+        git push origin main --tags  # Push the commit and new tag to GitHub
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Authentication with GitHub Token
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use your GitHub token for authentication
 
     - name: Publish the new version to GitHub Packages
       run: |
-        # Publish the package to GitHub Packages
-        npm publish --registry https://npm.pkg.github.com
+        # Publish the updated version to GitHub Packages (or npm registry)
+        npm publish --registry https://npm.pkg.github.com  # Change to npm registry if needed
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Authentication for publishing
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use your GitHub token for publishing
 
-  failover-to-lts:
-    runs-on: ubuntu-latest
-    needs: versioning
-    if: failure()  # Only runs if the versioning job fails
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '16'
-
-    - name: Install dependencies
-      run: npm install
-
-    - name: Deploy LTS version
-      run: |
-        echo "Deployment failed, rolling back to LTS version"
-        # Example: Rollback to a previously tagged LTS version
-        npm install @your-org/your-lts-version
-        npm publish --registry https://npm.pkg.github.com
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Authentication for publishing
