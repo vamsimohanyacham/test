@@ -9,6 +9,9 @@ on:
 jobs:
   version_bump:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # Allow write access to contents (for pushing changes)
+      pull-requests: write # If you need pull request write access
 
     steps:
       # Step 1: Checkout the repository
@@ -71,7 +74,7 @@ jobs:
             echo "Committing version bump changes."
             git add package.json package-lock.json
             git commit -m "Automated version bump"
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+            git push origin main
           else
             echo "No changes detected, skipping commit and push."
           fi
@@ -84,4 +87,4 @@ jobs:
           npm version patch --preid "lts" -m "Automated version bump to latest LTS"
           git add package.json package-lock.json
           git commit -m "Automated LTS version bump"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+          git push origin main
