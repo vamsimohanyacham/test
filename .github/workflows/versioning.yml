@@ -71,12 +71,12 @@ jobs:
             echo "Committing version bump changes."
             git add package.json package-lock.json
             git commit -m "Automated version bump"
-            git push origin main
+            git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
           else
             echo "No changes detected, skipping commit and push."
           fi
 
-      # Step 11: Handle errors and ensure latest LTS version if needed
+      # Step 11: Handle errors and ensure LTS version if needed
       - name: Handle errors and ensure LTS version (if failure)
         if: failure()
         run: |
@@ -84,4 +84,4 @@ jobs:
           npm version patch --preid "lts" -m "Automated version bump to latest LTS"
           git add package.json package-lock.json
           git commit -m "Automated LTS version bump"
-          git push origin main
+          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
