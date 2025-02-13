@@ -9,6 +9,10 @@ jobs:
   versioning:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write  # Grant write access to the repository contents
+      metadata: write  # Grant write permissions for tags and metadata (optional but recommended)
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -45,7 +49,7 @@ jobs:
     - name: Commit changes and push to GitHub
       run: |
         git add package.json package-lock.json
-        git commit -m "Automated version bump" || echo "No changes to commit"
+        git commit -m "Automated version bump" || (echo "No changes to commit" && exit 1)
         git push origin main --tags  # Push the commit and new tag to GitHub
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for authentication
