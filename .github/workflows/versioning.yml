@@ -71,7 +71,7 @@ jobs:
             echo "Committing version bump changes."
             git add package.json package-lock.json
             git commit -m "Automated version bump"
-            git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
           else
             echo "No changes detected, skipping commit and push."
           fi
@@ -84,4 +84,4 @@ jobs:
           npm version patch --preid "lts" -m "Automated version bump to latest LTS"
           git add package.json package-lock.json
           git commit -m "Automated LTS version bump"
-          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
