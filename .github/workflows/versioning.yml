@@ -1,68 +1,44 @@
-name: Versioning and Publish
+name: Automated Commit and Push for package.json and package-lock.json
 
 on:
   push:
     branches:
-      - main  # Trigger on push to 'main' branch
+      - main
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  versioning:
+  check_and_commit_push:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write  # Allow write access to repository contents (commit/push)
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3  # Using the latest stable version of the checkout action
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3  # Using the latest stable version of setup-node
-      with:
-        node-version: '16'
+      # Step 2: Check if package.json or package-lock.json have changes
+      - name: Check for changes in package.json and package-lock.json
+        id: changes_check
+        run: |
+          # Checking if there are changes in the specified files
+          git diff --exit-code package.json package-lock.json || echo "Changes detected in package.json or package-lock.json"
 
-    - name: Install dependencies
-      run: npm install
+      # Step 3: Commit changes if they exist
+      - name: Commit changes if any
+        if: steps.changes_check.outputs.exit_code != '0'  # If changes are detected
+        run: |
+          git config user.name "Automated Commit"
+          git config user.email "action@github.com"
+          git add package.json package-lock.json
+          git commit -m "Automated update to package.json and package-lock.json"
+        
+      # Step 4: Push changes if commit was made
+      - name: Push changes
+        if: steps.changes_check.outputs.exit_code != '0'  # If commit was made
+        run: |
+          git push origin main
 
-    - name: Clean git working directory
-      run: |
-        git reset --hard  # Discard uncommitted changes
-        git clean -fd  # Remove untracked files and directories
-
-    - name: Set git user for commit
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-    - name: Check git status before version bump
-      run: git status
-
-    - name: Automatically increment version (patch)
-      run: |
-        npm version patch -m "Bump version to %s"
-        git status  # Verify that there are changes to commit
-
-    - name: Check git status after version bump
-      run: git status
-
-    - name: Debug environment and git status
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Git status: $(git status)"
-        echo "Node version: $(node -v)"
-        echo "NPM version: $(npm -v)"
-        echo "NPM config: $(npm config list)"
-
-    - name: Commit changes and push to GitHub
-      run: |
-        git add package.json package-lock.json
-        git commit -m "Automated version bump" || (echo "No changes to commit" && exit 1)
-        git push origin main --tags  # Push the commit and new tag to GitHub
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for authentication
-
-    - name: Publish the new version to GitHub Packages
-      run: |
-        npm publish --registry https://npm.pkg.github.com  # Publish the package to GitHub Packages
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for publishing
+      # Step 5: Skip the commit and push if no changes were detected
+      - name: Skip commit and push if no changes detected
+        if: steps.changes_check.outputs.exit_code == '0'
+        run: |
+          echo "No changes detected in package.json or package-lock.json. No commit or push needed."
