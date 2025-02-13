@@ -1,73 +1,33 @@
-name: Version Bump and LTS Support
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # Allows manual trigger
-
 jobs:
   version_bump:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
 
-      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           npm install
 
-      # Step 4: Clean git working directory (optional)
-      - name: Clean Git working directory
+      - name: Increment version
         run: |
-          git reset --hard
-          git clean -fd
+          # Check if there are changes before bumping version
+          git diff --exit-code
+          npm version patch -m "Automated version bump to %s"
 
-      # Step 5: Set Git user identity (fixes "empty ident" error)
-      - name: Set Git user identity
+      - name: Commit changes if needed
         run: |
-          git config --global user.name "Automated Commit"
-          git config --global user.email "action@github.com"
-
-      # Step 6: Check commit message for LTS flag
-      - name: Check for LTS commit message
-        id: check_lts
-        run: |
-          echo "::set-output name=version_type::$(if [[ $GITHUB_SHA == *"lts"* ]]; then echo "lts"; else echo "regular"; fi)"
-
-      # Step 7: Increment version and handle LTS flag
-      - name: Increment version (patch, minor, major)
-        run: |
-          if [[ "${{ steps.check_lts.outputs.version_type }}" == "lts" ]]; then
-            npm version patch --preid "lts" -m "Automated version bump to %s (LTS)"
+          # Check if there are changes before committing
+          if [[ `git status --porcelain` ]]; then
+            git add package.json package-lock.json
+            git commit -m "Automated version bump"
+            git push origin main
           else
-            npm version patch -m "Automated version bump to %s"
+            echo "No changes to commit."
           fi
-
-      # Step 8: Commit changes (if version was bumped)
-      - name: Commit version bump
-        run: |
-          git add package.json package-lock.json
-          git commit -m "Automated version bump"
-
-      # Step 9: Push the commit to the repository
-      - name: Push changes
-        run: |
-          git push origin main
-
-      # Step 10: If there are errors, trigger latest LTS version
-      - name: Handle errors and ensure LTS
-        if: failure()
-        run: |
-          echo "Error occurred, applying latest LTS version."
-          npm version patch --preid "lts" -m "Automated version bump to latest LTS"
-          git push origin main
