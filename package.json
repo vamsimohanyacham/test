@@ -1,8 +1,8 @@
 {
   "name": "middlewaretalents",
   "private": true,
-  "version": "1.0.0",  // This will automatically update when the workflow runs
-  "type": "module",  // Defines that you're using ECMAScript modules
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
