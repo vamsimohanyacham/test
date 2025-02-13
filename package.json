@@ -1,7 +1,7 @@
 {
   "name": "middlewaretalents",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",  // Updated version
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,8 +15,8 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "prop-types": "^15.8.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^18.3.1",  // This is already up-to-date
+    "react-dom": "^18.3.1"  // This is already up-to-date
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
