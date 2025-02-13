@@ -1,33 +1,72 @@
+name: Auto Version Bump and LTS Support
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger if needed
+
 jobs:
   version_bump:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Step 2: Set up Node.js (adjust to your preferred version)
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '16'  # Set your Node.js version
 
+      # Step 3: Install dependencies
       - name: Install dependencies
-        run: |
-          npm install
+        run: npm install
 
-      - name: Increment version
+      # Step 4: Set Git user identity (required for committing)
+      - name: Set Git user identity
         run: |
-          # Check if there are changes before bumping version
-          git diff --exit-code
-          npm version patch -m "Automated version bump to %s"
+          git config --global user.name "Automated Commit"
+          git config --global user.email "action@github.com"
 
-      - name: Commit changes if needed
+      # Step 5: Run Version Bump
+      - name: Run version bump
+        id: version_bump
         run: |
-          # Check if there are changes before committing
-          if [[ `git status --porcelain` ]]; then
+          # Check if the commit message includes "lts"
+          if [[ "${GITHUB_EVENT_HEAD_COMMIT_MESSAGE}" == *"lts"* ]]; then
+            echo "LTS flag detected. Bumping LTS version."
+            npm version patch --preid "lts" -m "Automated version bump to %s (LTS)"
+          else
+            echo "Bumping regular version."
+            npm version patch -m "Automated version bump to %s"
+          fi
+
+      # Step 6: Check if any changes have been made (in package.json/package-lock.json)
+      - name: Check for changes to commit
+        run: |
+          # Check for changes in package.json or package-lock.json
+          git diff --exit-code || echo "Changes detected in package.json or package-lock.json"
+
+      # Step 7: Commit changes if needed
+      - name: Commit version bump if changes detected
+        run: |
+          if [[ $(git status --porcelain) ]]; then
             git add package.json package-lock.json
             git commit -m "Automated version bump"
             git push origin main
           else
-            echo "No changes to commit."
+            echo "No changes detected, skipping commit and push."
           fi
+
+      # Step 8: Error handling and ensure latest LTS version if needed
+      - name: Handle errors and ensure LTS version (if failure)
+        if: failure()
+        run: |
+          echo "Error detected, applying latest LTS version."
+          npm version patch --preid "lts" -m "Automated version bump to latest LTS"
+          git add package.json package-lock.json
+          git commit -m "Automated LTS version bump"
+          git push origin main
