@@ -31,7 +31,7 @@ jobs:
     - name: Push version tag and changes to GitHub
       run: |
         # Push the commit and the new tag to GitHub
-        git push --follow-tags origin main
+        git push origin main --tags
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Authentication with GitHub Token
 
