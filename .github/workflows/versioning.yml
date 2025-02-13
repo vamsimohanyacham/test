@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Grant write access to the repository contents
-      metadata: write  # Grant write permissions for tags and metadata (optional but recommended)
-
+      contents: write  # Allow write access to repository contents (commit/push)
+      metadata: write  # Allow write access for metadata (tags)
+    
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3  # Using the latest stable version of the checkout action
 
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3  # Using the latest stable version of setup-node
       with:
         node-version: '16'
 
@@ -45,6 +45,14 @@ jobs:
 
     - name: Check git status after version bump
       run: git status
+
+    - name: Debug environment and git status
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Git status: $(git status)"
+        echo "Node version: $(node -v)"
+        echo "NPM version: $(npm -v)"
+        echo "NPM config: $(npm config list)"
 
     - name: Commit changes and push to GitHub
       run: |
