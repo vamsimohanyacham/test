@@ -21,6 +21,11 @@ jobs:
     - name: Install dependencies
       run: npm install  # Install dependencies in your package.json
 
+    - name: Clean git working directory
+      run: |
+        git reset --hard  # Discard uncommitted changes
+        git clean -fd  # Remove untracked files and directories
+
     - name: Automatically increment version (patch)
       run: |
         # Automatically increment the version (patch by default, change to 'minor' or 'major' as needed)
@@ -41,4 +46,3 @@ jobs:
         npm publish --registry https://npm.pkg.github.com  # Change to npm registry if needed
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use your GitHub token for publishing
-
