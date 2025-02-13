@@ -1,102 +1,46 @@
-name: Auto Version Bump and LTS Support
+name: Version and Deploy
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch: # Allows manual trigger if needed
+      - main  # Triggers only on commits to the 'main' branch (or change it to your default branch)
 
 jobs:
-  version_bump:
+  versioning:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    # Step 1: Checkout the code
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      # Step 2: Set up Node.js (adjust to your preferred version)
-        - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'  # Set your Node.js version
+    # Step 2: Set up Node.js (if your project uses Node)
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'  # Choose the Node.js version according to your project
 
-      # Step 3: Install dependencies
-      - name: Install dependencies
-        run: npm install
+    # Step 3: Configure git (for committing changes automatically)
+    - name: Configure git
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
 
-      # Step 4: Set Git user identity (required for committing)
-      - name: Set Git user identity
-        run: |
-          git config --global user.name "Automated Commit"
-          git config --global user.email "action@github.com"
+    # Step 4: Bump the version using npm or your chosen versioning method
+    - name: Bump version
+      run: |
+        npm version patch -m "Bump version to %s"
+        # For other versioning tools, use their respective commands
+        # Example for Python: python setup.py versioning
 
-      # Step 5: Clean Git working directory
-      - name: Clean git working directory and node_modules changes
-        run: |
-          echo "Cleaning Git working directory"
-          git reset --hard  # Reset any changes, unstage and uncommit
-          git clean -fdx  # Removes all untracked files and directories
-          git status
-          # Ensure node_modules is removed from Git tracking
-          git rm -r --cached node_modules || echo "No node_modules to remove"
-          echo "Removed node_modules changes from git."
+    # Step 5: Commit and push version update
+    - name: Commit and push new version
+      run: |
+        git add package.json # or relevant files for versioning
+        git commit -m "Bumped version"
+        git push origin main  # or your branch name
 
-      # Step 6: Check if git working directory is clean
-      - name: Verify Git working directory is clean
-        run: |
-          git status --porcelain
-          if [[ $(git status --porcelain) ]]; then
-            echo "Git working directory is not clean. Aborting.";
-            exit 1;
-          else
-            echo "Git working directory is clean."
-          fi
+    # Step 6: Optionally, publish your package (e.g., to npm, Docker, etc.)
+    # - name: Publish to npm
+    #   run: npm publish --access public
 
-      # Step 7: Run Version Bump
-      - name: Run version bump
-        id: version_bump
-        run: |
-          echo "Commit message: $GITHUB_EVENT_HEAD_COMMIT_MESSAGE"
-          if [[ -z "${GITHUB_EVENT_HEAD_COMMIT_MESSAGE}" ]]; then
-            echo "Warning: Commit message is empty. Using default message."
-            GITHUB_EVENT_HEAD_COMMIT_MESSAGE="Automated version bump"
-          fi
-          if [[ "${GITHUB_EVENT_HEAD_COMMIT_MESSAGE}" == *"lts"* ]]; then
-            echo "LTS flag detected. Bumping LTS version."
-            npm version patch --preid "lts" -m "Automated version bump to %s (LTS)"
-          else
-            echo "Bumping regular version."
-            npm version patch -m "Automated version bump to %s"
-          fi
-
-      # Step 8: Run npm install to update package-lock.json
-      - name: Run npm install to update package-lock.json
-        run: npm install
-
-      # Step 9: Check for changes in package.json or package-lock.json
-      - name: Check for changes to commit (package.json, package-lock.json)
-        run: |
-          git status --porcelain | grep -E 'package.json|package-lock.json' || echo "No relevant changes detected."
-
-      # Step 10: Commit version bump changes if needed
-      - name: Commit changes if there are updates
-        run: |
-          if [[ $(git status --porcelain | grep -E 'package.json|package-lock.json') ]]; then
-            echo "Committing version bump changes."
-            git add package.json package-lock.json
-            git commit -m "Automated version bump"
-            git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
-          else
-            echo "No changes detected in package.json or package-lock.json, skipping commit and push."
-          fi
-
-      # Step 11: Handle errors and ensure LTS version if needed
-      - name: Handle errors and ensure LTS version (if failure)
-        if: failure()
-        run: |
-          echo "Error detected, applying latest LTS version."
-          npm version patch --preid "lts" -m "Automated version bump to latest LTS"
-          git add package.json package-lock.json
-          git commit -m "Automated LTS version bump"
-          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
