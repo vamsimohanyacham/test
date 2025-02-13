@@ -16,10 +16,10 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'  # Set the Node.js version you want to use
+        node-version: '16'
 
     - name: Install dependencies
-      run: npm install  # Install your project's dependencies
+      run: npm install
 
     - name: Clean git working directory
       run: |
@@ -31,10 +31,16 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+    - name: Check git status before version bump
+      run: git status
+
     - name: Automatically increment version (patch)
       run: |
-        npm version patch -m "Bump version to %s"  # This updates package.json and creates a new commit
+        npm version patch -m "Bump version to %s"
         git status  # Verify that there are changes to commit
+
+    - name: Check git status after version bump
+      run: git status
 
     - name: Commit changes and push to GitHub
       run: |
@@ -42,10 +48,10 @@ jobs:
         git commit -m "Automated version bump" || echo "No changes to commit"
         git push origin main --tags  # Push the commit and new tag to GitHub
       env:
-        GITHUB_TOKEN: ${{ secrets.NODE_AUTH_TOKEN  }}  # Use GitHub token for authentication
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for authentication
 
     - name: Publish the new version to GitHub Packages
       run: |
         npm publish --registry https://npm.pkg.github.com  # Publish the package to GitHub Packages
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}  # Use GitHub token for publishing
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for publishing
