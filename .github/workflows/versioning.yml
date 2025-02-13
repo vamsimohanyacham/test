@@ -31,7 +31,13 @@ jobs:
           git config --global user.name "Automated Commit"
           git config --global user.email "action@github.com"
 
-      # Step 5: Run Version Bump
+      # Step 5: Clean git working directory
+      - name: Clean git working directory
+        run: |
+          git reset --hard
+          git clean -fd
+
+      # Step 6: Run Version Bump
       - name: Run version bump
         id: version_bump
         run: |
@@ -44,14 +50,13 @@ jobs:
             npm version patch -m "Automated version bump to %s"
           fi
 
-      # Step 6: Check if any changes have been made (in package.json/package-lock.json)
+      # Step 7: Check for changes to commit
       - name: Check for changes to commit
         run: |
-          # Check for changes in package.json or package-lock.json
           git diff --exit-code || echo "Changes detected in package.json or package-lock.json"
 
-      # Step 7: Commit changes if needed
-      - name: Commit version bump if changes detected
+      # Step 8: Commit version bump changes if needed
+      - name: Commit changes if there are updates
         run: |
           if [[ $(git status --porcelain) ]]; then
             git add package.json package-lock.json
@@ -61,7 +66,7 @@ jobs:
             echo "No changes detected, skipping commit and push."
           fi
 
-      # Step 8: Error handling and ensure latest LTS version if needed
+      # Step 9: Handle errors and ensure latest LTS version if needed
       - name: Handle errors and ensure LTS version (if failure)
         if: failure()
         run: |
