@@ -31,12 +31,14 @@ jobs:
           git config --global user.name "Automated Commit"
           git config --global user.email "action@github.com"
 
-      # Step 5: Clean git working directory and node_modules changes
+      # Step 5: Clean git working directory and remove node_modules changes
       - name: Clean git working directory and node_modules changes
         run: |
           git reset --hard
           git clean -fd
-          echo "Removed changes in node_modules."
+          # Ensure node_modules are not tracked or modified
+          git rm -r --cached node_modules
+          echo "Removed node_modules changes from git."
 
       # Step 6: Run Version Bump
       - name: Run version bump
@@ -55,21 +57,21 @@ jobs:
       - name: Run npm install to update package-lock.json
         run: npm install
 
-      # Step 8: Check for changes to commit and exclude node_modules
-      - name: Check for changes to commit
+      # Step 8: Check for changes to commit (Exclude node_modules)
+      - name: Check for changes to commit (package.json, package-lock.json)
         run: |
-          git status --porcelain | grep -v 'node_modules' || echo "Changes detected in package.json or package-lock.json"
+          git status --porcelain | grep -E 'package.json|package-lock.json' || echo "No relevant changes detected."
 
       # Step 9: Commit version bump changes if needed
       - name: Commit changes if there are updates
         run: |
-          if [[ $(git status --porcelain) ]]; then
+          if [[ $(git status --porcelain | grep -E 'package.json|package-lock.json') ]]; then
             echo "Committing version bump changes."
             git add package.json package-lock.json
             git commit -m "Automated version bump"
             git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
           else
-            echo "No changes detected, skipping commit and push."
+            echo "No changes detected in package.json or package-lock.json, skipping commit and push."
           fi
 
       # Step 10: Handle errors and ensure LTS version if needed
