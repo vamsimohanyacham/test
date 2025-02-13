@@ -25,7 +25,10 @@ jobs:
 
     - name: Ensure git is clean
       run: |
+        # Check if there are uncommitted changes
         git status
+        git diff
+        git diff --cached
         git add . || echo "No changes to commit"
         git commit -m "Committing changes before versioning" || echo "No changes to commit"
         git status  # To ensure there are no uncommitted changes
