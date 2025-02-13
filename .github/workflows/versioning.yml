@@ -26,13 +26,20 @@ jobs:
         run: |
           npm install
 
-      # Step 4: Increment version (bump patch version)
+      # Step 4: Ensure Git working directory is clean
+      - name: Clean Git working directory
+        run: |
+          # Discard any local changes (optional: use with caution)
+          git reset --hard
+          git clean -fd
+
+      # Step 5: Increment version (bump patch version)
       - name: Increment version
         run: |
           # Increment the patch version (1.0.0 -> 1.0.1)
           npm version patch -m "Automated version bump to %s"
 
-      # Step 5: Commit changes (if version was bumped)
+      # Step 6: Commit changes (if version was bumped)
       - name: Commit version bump
         run: |
           git config user.name "Automated Commit"
@@ -40,12 +47,12 @@ jobs:
           git add package.json package-lock.json
           git commit -m "Automated version bump"
         
-      # Step 6: Push the commit to the repository
+      # Step 7: Push the commit to the repository
       - name: Push changes
         run: |
           git push origin main
 
-      # Step 7: Skip commit and push if no changes were detected
+      # Step 8: Skip commit and push if no changes were detected
       - name: Skip commit and push if no changes detected
         if: steps.changes_check.outputs.exit_code == '0'
         run: |
