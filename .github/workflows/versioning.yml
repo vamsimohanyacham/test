@@ -1,51 +1,11 @@
-name: Auto Version Bump and LTS Support
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # Allows manual trigger if needed
-
-jobs:
-  version_bump:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write      # Allow write access to contents (for pushing changes)
-      pull-requests: write # If you need pull request write access
-
-    steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # Step 2: Set up Node.js (adjust to your preferred version)
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'  # Set your Node.js version
-
-      # Step 3: Install dependencies
-      - name: Install dependencies
-        run: npm install
-
-      # Step 4: Set Git user identity (required for committing)
-      - name: Set Git user identity
-        run: |
-          git config --global user.name "Automated Commit"
-          git config --global user.email "action@github.com"
-
-      # Step 5: Clean git working directory
-      - name: Clean git working directory
+      # Step 5: Clean git working directory and remove node_modules changes
+      - name: Clean git working directory and node_modules changes
         run: |
           git reset --hard
           git clean -fd
+          echo "Removed changes in node_modules."
 
-      # Step 6: Check current version in package.json
-      - name: Check current version in package.json
-        run: |
-          echo "Current version in package.json: $(jq -r .version package.json)"
-
-      # Step 7: Run Version Bump
+      # Step 6: Run Version Bump
       - name: Run version bump
         id: version_bump
         run: |
@@ -58,33 +18,11 @@ jobs:
             npm version patch -m "Automated version bump to %s"
           fi
 
-      # Step 8: Run npm install to update package-lock.json
+      # Step 7: Run npm install to update package-lock.json
       - name: Run npm install to update package-lock.json
         run: npm install
 
-      # Step 9: Check for changes to commit
+      # Step 8: Check for changes to commit and exclude node_modules
       - name: Check for changes to commit
         run: |
-          git diff --exit-code || echo "Changes detected in package.json or package-lock.json"
-
-      # Step 10: Commit version bump changes if needed
-      - name: Commit changes if there are updates
-        run: |
-          if [[ $(git status --porcelain) ]]; then
-            echo "Committing version bump changes."
-            git add package.json package-lock.json
-            git commit -m "Automated version bump"
-            git push origin main
-          else
-            echo "No changes detected, skipping commit and push."
-          fi
-
-      # Step 11: Handle errors and ensure LTS version if needed
-      - name: Handle errors and ensure LTS version (if failure)
-        if: failure()
-        run: |
-          echo "Error detected, applying latest LTS version."
-          npm version patch --preid "lts" -m "Automated version bump to latest LTS"
-          git add package.json package-lock.json
-          git commit -m "Automated LTS version bump"
-          git push origin main
+          git status --porcelain | grep -v 'node_modules' || echo "Changes detected in package.json or package-lock.json"
