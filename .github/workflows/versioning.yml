@@ -26,6 +26,11 @@ jobs:
         git reset --hard  # Discard uncommitted changes
         git clean -fd  # Remove untracked files and directories
 
+    - name: Set git user for commit
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"  # Set up the Git author
+
     - name: Automatically increment version (patch)
       run: |
         # Automatically increment the version (patch by default, change to 'minor' or 'major' as needed)
