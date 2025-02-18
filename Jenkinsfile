@@ -37,9 +37,15 @@ pipeline {
         stage('Ensure Vite is Executable') {
             steps {
                 echo "Ensure Vite is executable"
-                powershell '''
-                    chmod +x node_modules/.bin/vite  # Ensure Vite has execute permission
-                '''
+                script {
+                    if (isUnix()) {
+                        powershell '''
+                            chmod +x node_modules/.bin/vite  # Ensure Vite has execute permission on Unix systems
+                        '''
+                    } else {
+                        echo "Skipping chmod on Windows, as it's not necessary"
+                    }
+                }
             }
         }
 
