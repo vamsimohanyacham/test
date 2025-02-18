@@ -1,59 +1,84 @@
 pipeline {
     agent any
-    
+
     environment {
-        ARTIFACT_NAME = 'vite-app'
-        VERSION_FILE = 'version.txt'  // File that holds the current version
-        GITHUB_REPO = 'https://github.com/vamsimohanyacham/test.git'  // Your GitHub repo URL
-        GITHUB_BRANCH = 'build-artifacts'  // Branch to store artifacts
-        ZIP_FILE_NAME = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Artifact file name
+        ARTIFACT_VERSION = '1.0.0'  // Default version (will be overridden by version.txt)
     }
-    
+
     stages {
-        stage('Checkout Code') {
+        stage('Checkout SCM') {
             steps {
-                echo 'Checking out code from GitHub'
-                git url: "${GITHUB_REPO}", branch: 'main'
+                checkout scm  // Use this single step to checkout the repository from GitHub
             }
         }
-        
+
         stage('Retrieve Version') {
             steps {
                 echo 'Retrieving version from version.txt'
                 script {
+                    def VERSION_FILE = 'version.txt'  // Path to version.txt
+
+                    // Check if version.txt exists
                     if (fileExists(VERSION_FILE)) {
-                        // Read the current version from version.txt
+                        // Read the version from version.txt
                         def currentVersion = readFile(VERSION_FILE).trim()
-                        // Increment the version by 0.0.1 (e.g., 1.0.0 to 1.0.1)
+
+                        // Check if version is empty or malformed, set default version if so
+                        if (!currentVersion || !currentVersion.matches("\\d+\\.\\d+\\.\\d+")) {
+                            currentVersion = '1.0.0'
+                        }
+
+                        // Increment the patch version
                         def versionParts = currentVersion.tokenize('.')
-                        versionParts[2] = (versionParts[2].toInteger() + 1).toString()  // Increment minor version
+                        versionParts[2] = (versionParts[2].toInteger() + 1).toString()  // Increment patch version
                         ARTIFACT_VERSION = versionParts.join('.')
+
                     } else {
-                        // If version.txt doesn't exist, start with version 1.0.0
+                        // If version.txt doesn't exist, initialize the version to 1.0.0
+                        echo 'version.txt not found. Initializing to version 1.0.0'
                         ARTIFACT_VERSION = '1.0.0'
+
+                        // Create version.txt with the initial version if it doesn't exist
+                        writeFile(file: VERSION_FILE, text: ARTIFACT_VERSION)
                     }
+
                     // Write the new version back to version.txt
                     writeFile(file: VERSION_FILE, text: ARTIFACT_VERSION)
+
                     echo "New version: ${ARTIFACT_VERSION}"
                 }
             }
         }
-        
+
         stage('Install Dependencies') {
             steps {
                 echo 'Installing dependencies using npm...'
                 script {
-                    // Install dependencies (using npm)
+                    // Ensure npm install works without skipping
                     bat 'npm install'
                 }
             }
         }
-        
+
+        stage('Ensure Vite is Executable') {
+            steps {
+                echo 'Ensure Vite is executable'
+                script {
+                    // Skip chmod for Windows-based systems
+                    if (isUnix()) {
+                        sh 'chmod +x node_modules/.bin/vite'  // Ensure vite is executable for Unix
+                    } else {
+                        echo 'Skipping chmod on Windows, as it is not necessary'
+                    }
+                }
+            }
+        }
+
         stage('Build Vite App') {
             steps {
                 echo 'Building the Vite app'
                 script {
-                    // Build the Vite app
+                    // Run the Vite build process
                     bat 'npm run build'
                 }
             }
@@ -61,41 +86,52 @@ pipeline {
 
         stage('Create .zip Archive') {
             steps {
-                echo 'Creating the zip archive of the build'
+                echo 'Creating .zip archive for build'
                 script {
-                    // Create the zip file using PowerShell
-                    bat "powershell Compress-Archive -Path dist/* -DestinationPath ${ZIP_FILE_NAME}"
+                    // Create zip file based on OS
+                    if (isUnix()) {
+                        sh 'zip -r build.zip dist/*'  // Create zip file for Unix-based systems
+                    } else {
+                        bat 'powershell -Command "Compress-Archive -Path dist/* -DestinationPath build.zip"'  // Windows command
+                    }
                 }
             }
         }
-        
-        stage('Push to GitHub - Store Artifact') {
+
+        stage('Deploy to Nginx') {
             steps {
-                echo 'Pushing artifact to GitHub'
+                echo 'Deploying to Nginx'
                 script {
-                    // Ensure we're on the correct branch
-                    sh """
-                        git checkout -b ${GITHUB_BRANCH} || git checkout ${GITHUB_BRANCH}
-                    """
-                    
-                    // Add the generated zip file
-                    sh """
-                        git add ${ZIP_FILE_NAME}
-                        git commit -m "Add build artifact ${ZIP_FILE_NAME}"
-                    """
-                    
-                    // Push to the `build-artifacts` branch
-                    sh """
-                        git push origin ${GITHUB_BRANCH}
-                    """
+                    // Add your deployment command here
+                    echo 'Deploying the built app to Nginx or another web server'
+                }
+            }
+        }
+
+        stage('Push Version to GitHub') {
+            steps {
+                echo 'Pushing version.txt changes to GitHub'
+                script {
+                    // Commit and push the updated version to GitHub
+                    bat 'git add version.txt'
+                    bat 'git commit -m "Update version to ${ARTIFACT_VERSION}"'
+                    bat 'git push origin main'  // Adjust branch name if needed
                 }
             }
         }
     }
-    
+
     post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
+        }
+
         always {
-            echo "Pipeline execution completed"
+            echo 'Cleaning up resources if needed'
         }
     }
 }
