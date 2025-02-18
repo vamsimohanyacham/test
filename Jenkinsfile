@@ -2,59 +2,44 @@ pipeline {
     agent any
 
     environment {
-        NODE_HOME = tool 'NODE_HOME'  // Use the NodeJS tool configured in Jenkins
-        PATH = "${NODE_HOME}/bin:${env.PATH}:node_modules/.bin"  // Add node_modules/.bin to PATH
-        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (this will be the default starting version)
-        NGINX_PATH = '/usr/share/nginx/html'   // Nginx Web Root Path
+        // Define any environment variables if required
+        ARTIFACT_NAME = 'vite-app'  // Change this to your artifact name
+        ARTIFACT_VERSION = '1.0.0'  // Change this to your version
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                echo 'Checkout the code from Git repository'
-                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: 'githubcred'
+                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 script {
-                    echo "Installing dependencies using npm..."
-                    try {
-                        powershell '''
-                            npm install  # Install dependencies using npm
-                        '''
-                    } catch (Exception e) {
-                        echo "Failed to install dependencies: ${e.getMessage()}"
-                        currentBuild.result = 'FAILURE'
-                        throw e  // Re-throw the error to stop the pipeline
-                    }
+                    echo 'Installing dependencies using npm...'
+                    // If npm is installed and available, run `npm install` to install dependencies
+                    bat 'npm install'
                 }
             }
         }
 
         stage('Ensure Vite is Executable') {
             steps {
-                echo "Ensure Vite is executable"
                 script {
-                    if (isUnix()) {
-                        powershell '''
-                            chmod +x node_modules/.bin/vite  # Ensure Vite has execute permission on Unix systems
-                        '''
-                    } else {
-                        echo "Skipping chmod on Windows, as it's not necessary"
-                    }
+                    echo 'Ensure Vite is executable'
+                    // Skipping chmod on Windows, as it's not necessary
+                    echo 'Skipping chmod on Windows, as it is not necessary'
                 }
             }
         }
 
         stage('Build Vite App') {
             steps {
-                echo "Building the Vite app"
-                powershell '''
-                    npx vite build  # Use npx to run vite build
-                '''
+                script {
+                    echo 'Building the Vite app'
+                    bat 'npm run build'  // Assuming you have a build script defined in your package.json
+                }
             }
         }
 
@@ -62,9 +47,13 @@ pipeline {
             steps {
                 script {
                     def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    powershell '''
-                        zip -r ${zipFileName} dist/*  # Creating zip archive
-                    '''
+                    echo "Creating .zip archive: ${zipFileName}"
+
+                    // Use PowerShell to create the zip archive on Windows
+                    powershell """
+                        Compress-Archive -Path dist/* -DestinationPath ${zipFileName}
+                    """
+
                     echo "Created ${zipFileName}"
                 }
             }
@@ -73,17 +62,10 @@ pipeline {
         stage('Deploy to Nginx') {
             steps {
                 script {
-                    echo "Moving dist folder to Nginx directory..."
-                    powershell '''
-                        sudo cp -r dist/* ${NGINX_PATH}/
-                    '''
-                    echo "Deployed ${ARTIFACT_NAME}-${ARTIFACT_VERSION} to Nginx"
-                    
-                    echo "Restarting Nginx..."
-                    powershell '''
-                        sudo systemctl restart nginx
-                    '''
-                    echo "Nginx restarted successfully"
+                    echo 'Deploying to Nginx'
+                    // Add Nginx deployment commands here, e.g., copying the zip file to the server
+                    // Example:
+                    // bat 'scp ${zipFileName} user@nginx-server:/path/to/deploy'
                 }
             }
         }
@@ -91,15 +73,16 @@ pipeline {
 
     post {
         always {
-            echo "Cleaning up zip files"
-            powershell '''
-                rm -f *.zip || true
-            '''
+            echo 'Cleaning up workspace...'
+            // Add any cleanup commands if necessary
+        }
+
+        success {
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
-            echo "Pipeline failed. Investigating failure..."
-            // Additional failure handling logic can go here if needed
+            echo 'Pipeline failed, check the logs for details.'
         }
     }
 }
