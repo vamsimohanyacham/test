@@ -118,7 +118,7 @@ jobs:
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Install dependencies using npm
-      run: n ins
+      run: npm install
 
     - name: Ensure Vite is executable
       run: |
@@ -152,9 +152,39 @@ jobs:
         CURRENT_VERSION=$(cat version.txt)
         echo "Rolling back to version: $CURRENT_VERSION"
         
-        # Deploy the previous version
-        echo "Deploying version $CURRENT_VERSION to Nginx"
-        # Replace this with the actual deployment logic for the previous version
+        # Decrement the version (patch version by 1)
+        IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+        PATCH=${VERSION_PARTS[2]}
+        PATCH=$((PATCH - 1))  # Decrease patch version by 1
+
+        # Ensure the version doesn't go below 0
+        if [ "$PATCH" -lt 0 ]; then
+          echo "Error: Cannot decrement version further."
+          exit 1
+        fi
+
+        NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+        echo "New version after rollback: $NEW_VERSION"
+
+        # Update version.txt with the decremented version
+        echo "$NEW_VERSION" > version.txt
+        git add version.txt
+        git commit -m "Rollback version to $NEW_VERSION"
+        
+        # Push the rolled-back version to the repository
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
+
+        # Create a branch for the rolled-back version
+        BRANCH_NAME="version-$NEW_VERSION"
+        echo "Creating branch for rolled-back version: $BRANCH_NAME"
+        git checkout -b "$BRANCH_NAME"
+        
+        # Push the rolled-back branch to GitHub
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
+
+        # Deploy the rolled-back version to Nginx
+        echo "Deploying rolled-back version $NEW_VERSION to Nginx"
+
 
 
 
