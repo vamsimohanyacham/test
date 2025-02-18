@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Ensure GitHub Actions can push to the 
+      contents: write  # Ensure GitHub Actions can push to the repo
 
     steps:
     - name: Checkout repository
@@ -66,7 +66,14 @@ jobs:
         # Update version.txt with the new version
         echo "$NEW_VERSION" > version.txt
         git add version.txt
-        git commit -m "Update version to $NEW_VERSION"
+
+        # Check if there are any changes to commit
+        if git diff --cached --exit-code; then
+          echo "No changes to commit, skipping commit."
+        else
+          git commit -m "Update version to $NEW_VERSION"
+          echo "Committed new version to version.txt"
+        fi
 
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
@@ -98,13 +105,6 @@ jobs:
 
         git checkout -b "$BRANCH_NAME"  # Create the new branch locally
 
-        # Add and commit the updated version.txt file
-        git add version.txt
-        git commit -m "Update version to $NEW_VERSION"
-
-        # Ensure we handle conflicts by pulling the latest changes
-        git pull origin main --rebase  # Rebase with the main branch to avoid conflicts
-
         # Push the new branch to GitHub
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
@@ -127,6 +127,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 
