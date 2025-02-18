@@ -28,7 +28,6 @@ jobs:
           echo "No version.txt found, initializing version to 1.0.0"
           VERSION="1.0.0"
         fi
-        echo "VERSION=$VERSION" >> $GITHUB_ENV  # Export version as an environment variable
 
     - name: Increment version
       run: |
@@ -70,6 +69,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 # name: Versioning and Build Pipeline
