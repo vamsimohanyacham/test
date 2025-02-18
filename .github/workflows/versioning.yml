@@ -67,6 +67,9 @@ jobs:
         echo "$NEW_VERSION" > version.txt
         git add version.txt
 
+        # Check if version.txt has been staged for commit
+        git diff --cached
+        
         # Commit the version.txt file with the new version
         git commit -m "Update version to $NEW_VERSION"
 
@@ -82,33 +85,37 @@ jobs:
         
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
-    - name: Create new branch for version
+    - name: Verify NEW_VERSION variable
+      run: |
+        echo "NEW_VERSION is $NEW_VERSION"  # To verify the value of NEW_VERSION after increment
+
+    - name: Create and push new branch for version
       run: |
         if [ -z "$NEW_VERSION" ]; then
           echo "Error: NEW_VERSION is empty. Exiting."
           exit 1
         fi
 
-        # Generate the new branch name
         BRANCH_NAME="version-$NEW_VERSION"
         echo "Creating branch: $BRANCH_NAME"
         
-        # Fetch latest changes from the remote
-        git fetch origin
+        git fetch origin  # Fetch latest changes from the remote
 
-        # Create a new branch based on the updated version
-        git checkout -b "$BRANCH_NAME"
+        # Check if branch already exists on the remote
+        if git ls-remote --exit-code --heads origin "$BRANCH_NAME"; then
+          echo "Branch $BRANCH_NAME already exists, incrementing version..."
+          
+          # Automatically increment to the next patch version
+          PATCH=$((PATCH + 1))
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          BRANCH_NAME="version-$NEW_VERSION"
+          echo "New branch name: $BRANCH_NAME"
+        fi
 
-        # Add and commit version.txt in the new branch
-        git add version.txt
-        git commit -m "Create version branch for $NEW_VERSION"
+        git checkout -b "$BRANCH_NAME"  # Create the new branch locally
 
         # Push the new branch to GitHub
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
-
-    - name: Verify NEW_VERSION variable
-      run: |
-        echo "NEW_VERSION is $NEW_VERSION"  # To verify the value of NEW_VERSION after increment
 
     - name: Install dependencies using npm
       run: npm install
@@ -129,6 +136,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 
