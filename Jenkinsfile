@@ -1,88 +1,101 @@
 pipeline {
     agent any
-
+    
     environment {
-        // Define any environment variables if required
-        ARTIFACT_NAME = 'vite-app'  // Change this to your artifact name
-        ARTIFACT_VERSION = '1.0.0'  // Change this to your version
+        ARTIFACT_NAME = 'vite-app'
+        VERSION_FILE = 'version.txt'  // File that holds the current version
+        GITHUB_REPO = 'https://github.com/vamsimohanyacham/test.git'  // Your GitHub repo URL
+        GITHUB_BRANCH = 'build-artifacts'  // Branch to store artifacts
+        ZIP_FILE_NAME = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Artifact file name
     }
-
+    
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git'
+                echo 'Checking out code from GitHub'
+                git url: "${GITHUB_REPO}", branch: 'main'
             }
         }
-
+        
+        stage('Retrieve Version') {
+            steps {
+                echo 'Retrieving version from version.txt'
+                script {
+                    if (fileExists(VERSION_FILE)) {
+                        // Read the current version from version.txt
+                        def currentVersion = readFile(VERSION_FILE).trim()
+                        // Increment the version by 0.0.1 (e.g., 1.0.0 to 1.0.1)
+                        def versionParts = currentVersion.tokenize('.')
+                        versionParts[2] = (versionParts[2].toInteger() + 1).toString()  // Increment minor version
+                        ARTIFACT_VERSION = versionParts.join('.')
+                    } else {
+                        // If version.txt doesn't exist, start with version 1.0.0
+                        ARTIFACT_VERSION = '1.0.0'
+                    }
+                    // Write the new version back to version.txt
+                    writeFile(file: VERSION_FILE, text: ARTIFACT_VERSION)
+                    echo "New version: ${ARTIFACT_VERSION}"
+                }
+            }
+        }
+        
         stage('Install Dependencies') {
             steps {
+                echo 'Installing dependencies using npm...'
                 script {
-                    echo 'Installing dependencies using npm...'
-                    // If npm is installed and available, run `npm install` to install dependencies
+                    // Install dependencies (using npm)
                     bat 'npm install'
                 }
             }
         }
-
-        stage('Ensure Vite is Executable') {
-            steps {
-                script {
-                    echo 'Ensure Vite is executable'
-                    // Skipping chmod on Windows, as it's not necessary
-                    echo 'Skipping chmod on Windows, as it is not necessary'
-                }
-            }
-        }
-
+        
         stage('Build Vite App') {
             steps {
+                echo 'Building the Vite app'
                 script {
-                    echo 'Building the Vite app'
-                    bat 'npm run build'  // Assuming you have a build script defined in your package.json
+                    // Build the Vite app
+                    bat 'npm run build'
                 }
             }
         }
 
         stage('Create .zip Archive') {
             steps {
+                echo 'Creating the zip archive of the build'
                 script {
-                    def zipFileName = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    echo "Creating .zip archive: ${zipFileName}"
-
-                    // Use PowerShell to create the zip archive on Windows
-                    powershell """
-                        Compress-Archive -Path dist/* -DestinationPath ${zipFileName}
-                    """
-
-                    echo "Created ${zipFileName}"
+                    // Create the zip file using PowerShell
+                    bat "powershell Compress-Archive -Path dist/* -DestinationPath ${ZIP_FILE_NAME}"
                 }
             }
         }
-
-        stage('Deploy to Nginx') {
+        
+        stage('Push to GitHub - Store Artifact') {
             steps {
+                echo 'Pushing artifact to GitHub'
                 script {
-                    echo 'Deploying to Nginx'
-                    // Add Nginx deployment commands here, e.g., copying the zip file to the server
-                    // Example:
-                    // bat 'scp ${zipFileName} user@nginx-server:/path/to/deploy'
+                    // Ensure we're on the correct branch
+                    sh """
+                        git checkout -b ${GITHUB_BRANCH} || git checkout ${GITHUB_BRANCH}
+                    """
+                    
+                    // Add the generated zip file
+                    sh """
+                        git add ${ZIP_FILE_NAME}
+                        git commit -m "Add build artifact ${ZIP_FILE_NAME}"
+                    """
+                    
+                    // Push to the `build-artifacts` branch
+                    sh """
+                        git push origin ${GITHUB_BRANCH}
+                    """
                 }
             }
         }
     }
-
+    
     post {
         always {
-            echo 'Cleaning up workspace...'
-            // Add any cleanup commands if necessary
-        }
-
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-
-        failure {
-            echo 'Pipeline failed, check the logs for details.'
+            echo "Pipeline execution completed"
         }
     }
 }
