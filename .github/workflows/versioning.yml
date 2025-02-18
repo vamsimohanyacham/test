@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Ensure GitHub Actions can push to the repo
+      contents: write  # Ensure GitHub Actions can push to the 
 
     steps:
     - name: Checkout repository
