@@ -1,4 +1,3 @@
-
 name: Versioning and Build Pipeline
 
 on:
@@ -79,8 +78,8 @@ jobs:
         BRANCH_NAME="version-$NEW_VERSION"
         git checkout -b "$BRANCH_NAME"  # Create a new branch locally
 
-        # Explicit push to the new branch
-        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
+        # Push the new branch and force the push to ensure it's updated
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME" --force
         
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
@@ -107,6 +106,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 
