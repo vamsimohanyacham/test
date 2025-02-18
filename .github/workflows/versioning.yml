@@ -67,7 +67,9 @@ jobs:
         echo "$NEW_VERSION" > version.txt
         git add version.txt
 
-        # Check if there are any changes to commit
+        # Check for changes and commit if there are any
+        git diff --cached  # This will show the diff of the staged changes
+
         if git diff --cached --exit-code; then
           echo "No changes to commit, skipping commit."
         else
@@ -127,7 +129,6 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
-
 
 
 
