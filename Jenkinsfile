@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ARTIFACT_VERSION = '1.0.0'  // Default version (will be overridden by version.txt)
+        ARTIFACT_VERSION = '1.0.0'  // Default version (will be overridden by verion.txt)
     }
 
     stages {
