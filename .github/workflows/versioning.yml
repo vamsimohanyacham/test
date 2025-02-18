@@ -115,7 +115,7 @@ jobs:
         git checkout -b "$BRANCH_NAME"  # Create the new branch locally
 
         # Push the new branch to GitHub
-        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
+        git push https://github-actions:${{ secrets.GITHUB_TOKE }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Install dependencies using npm
       run: npm install
@@ -127,7 +127,7 @@ jobs:
         fi
 
     - name: Build Vite app
-      run: np rn bu
+      run: npm run build
 
     - name: Create .zip archive
       run: |
