@@ -118,7 +118,7 @@ jobs:
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Install dependencies using npm
-      run: npm install
+      run: nm is
 
     - name: Ensure Vite is executable
       run: |
