@@ -92,7 +92,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'zip -r build.zip dist/*'  // Create zip file for Unix-based systems
                     } else {
-                        bat 'powershell -Command "Compress-Archive -Path dist/* -DestinationPath build.zip"'  // Windows command
+                        bat 'powershell -Command "Compress-Archive -Path dist/* -DestinationPath build.zip"'  // Windowcommand
                     }
                 }
             }
