@@ -1,10 +1,3 @@
-name: Versioning and Build Pipeline
-
-on:
-  push:
-    branches:
-      - main
-
 jobs:
   versioning-and-build:
     runs-on: ubuntu-latest
@@ -42,11 +35,13 @@ jobs:
         echo "New version: $NEW_VERSION"
         echo "$NEW_VERSION" > version.txt
 
-    - name: Commit and push version.txt
+    - name: Create and push new branch for version
       run: |
+        BRANCH_NAME="version-$NEW_VERSION"
+        git checkout -b "$BRANCH_NAME"
         git add version.txt
         git commit -m "Update version to $NEW_VERSION"
-        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Install dependencies using npm
       run: npm install
@@ -67,3 +62,75 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
+
+
+# name: Versioning and Build Pipeline
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   versioning-and-build:
+#     runs-on: ubuntu-latest
+
+#     permissions:
+#       contents: write  # Ensure GitHub Actions can push to the repo
+
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v2
+
+#     - name: Set up Git
+#       run: |
+#         git config --global user.email "vamsimohanyacham@gmail.com"
+#         git config --global user.name "vamsimohanyacham"
+
+#     - name: Retrieve version from version.txt
+#       run: |
+#         VERSION_FILE="version.txt"
+#         if [ -f "$VERSION_FILE" ]; then
+#           VERSION=$(cat $VERSION_FILE)
+#           echo "Found version: $VERSION"
+#         else
+#           echo "No version.txt found, initializing version to 1.0.0"
+#           VERSION="1.0.0"
+#         fi
+#         echo "VERSION=$VERSION" >> $GITHUB_ENV  # Export version as an environment variable
+
+#     - name: Increment version
+#       run: |
+#         IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+#         PATCH=${VERSION_PARTS[2]}
+#         NEW_PATCH=$((PATCH + 1))
+#         NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$NEW_PATCH"
+#         echo "New version: $NEW_VERSION"
+#         echo "$NEW_VERSION" > version.txt
+
+#     - name: Commit and push version.txt
+#       run: |
+#         git add version.txt
+#         git commit -m "Update version to $NEW_VERSION"
+#         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
+
+#     - name: Install dependencies using npm
+#       run: npm install
+
+#     - name: Ensure Vite is executable
+#       run: |
+#         if [ -f node_modules/.bin/vite ]; then
+#           chmod +x node_modules/.bin/vite
+#         fi
+
+#     - name: Build Vite app
+#       run: npm run build
+
+#     - name: Create .zip archive
+#       run: |
+#         zip -r build.zip dist/*
+
+#     - name: Deploy to Nginx
+#       run: |
+#         echo "Deploying to Nginx"
