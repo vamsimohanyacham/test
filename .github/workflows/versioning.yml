@@ -29,7 +29,11 @@ jobs:
           echo "Found version: $VERSION"
         else
           echo "No version.txt found, initializing version to 1.0.1"
-          VERSION="1.0.1"  # Start with version 1.0.1
+          VERSION="1.0.1"  # Start with version 1.0.1 if the file is missing
+          echo "$VERSION" > $VERSION_FILE  # Create the file and write initial version
+          git add $VERSION_FILE
+          git commit -m "Initialize version to 1.0.1"
+          git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
         fi
         echo "VERSION=$VERSION" >> $GITHUB_ENV  # Export version as an environment variable
 
@@ -58,7 +62,12 @@ jobs:
 
         NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
         echo "New version: $NEW_VERSION"
+        
+        # Update version.txt with the new version
         echo "$NEW_VERSION" > version.txt
+        git add version.txt
+        git commit -m "Update version to $NEW_VERSION"
+
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
     - name: Verify NEW_VERSION variable
@@ -118,6 +127,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 
