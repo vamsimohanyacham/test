@@ -118,7 +118,7 @@ jobs:
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Install dependencies using npm
-      run: npm install
+      run: n iall
 
     - name: Ensure Vite is executable
       run: |
@@ -136,6 +136,19 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
+    - name: Fallback to previous version in case of failure
+      if: failure()
+      run: |
+        echo "Deployment failed for version $NEW_VERSION, rolling back to the previous version."
+        
+        # Get previous version from version.txt and use it to deploy
+        PREVIOUS_VERSION=$(cat version.txt)
+        echo "Rolling back to version: $PREVIOUS_VERSION"
+        
+        # Deploy the previous version
+        echo "Deploying version $PREVIOUS_VERSION to Nginx"
+        # Here, you would add the necessary deployment logic to deploy the previous version
 
 
 
@@ -209,21 +222,55 @@ jobs:
 #         echo "$NEW_VERSION" > version.txt
 #         git add version.txt
 
-#         # Check if the version.txt file has actually been updated
-#         git diff --cached  # Shows the diff of the staged changes
-
+#         # Check if version.txt has been staged for commit
+#         git diff --cached
+        
 #         # Commit the version.txt file with the new version
 #         git commit -m "Update version to $NEW_VERSION"
-#         echo "Committed new version to version.txt"
 
-#         # Explicit push to the current branch
+#         # Ensure that the commit was successful
+#         if git diff --cached --exit-code; then
+#           echo "No changes to commit, skipping commit."
+#         else
+#           echo "Version updated to $NEW_VERSION"
+#         fi
+
+#         # Push the changes to the current branch (main)
 #         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
-
+        
 #         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
 #     - name: Verify NEW_VERSION variable
 #       run: |
 #         echo "NEW_VERSION is $NEW_VERSION"  # To verify the value of NEW_VERSION after increment
+
+#     - name: Create and push new branch for version
+#       run: |
+#         if [ -z "$NEW_VERSION" ]; then
+#           echo "Error: NEW_VERSION is empty. Exiting."
+#           exit 1
+#         fi
+
+#         BRANCH_NAME="version-$NEW_VERSION"
+#         echo "Creating branch: $BRANCH_NAME"
+        
+#         git fetch origin  # Fetch latest changes from the remote
+
+#         # Check if branch already exists on the remote
+#         if git ls-remote --exit-code --heads origin "$BRANCH_NAME"; then
+#           echo "Branch $BRANCH_NAME already exists, incrementing version..."
+          
+#           # Automatically increment to the next patch version
+#           PATCH=$((PATCH + 1))
+#           NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+#           BRANCH_NAME="version-$NEW_VERSION"
+#           echo "New branch name: $BRANCH_NAME"
+#         fi
+
+#         git checkout -b "$BRANCH_NAME"  # Create the new branch locally
+
+#         # Push the new branch to GitHub
+#         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
 #     - name: Install dependencies using npm
 #       run: npm install
