@@ -74,38 +74,14 @@ jobs:
         git commit -m "Update version to $NEW_VERSION"
         echo "Committed new version to version.txt"
 
+        # Explicit push to the current branch
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
+
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
     - name: Verify NEW_VERSION variable
-      run: echo "NEW_VERSION is $NEW_VERSION"  # To verify the value of NEW_VERSION
-
-    - name: Create and push new branch for version
       run: |
-        if [ -z "$NEW_VERSION" ]; then
-          echo "Error: NEW_VERSION is empty. Exiting."
-          exit 1
-        fi
-
-        BRANCH_NAME="version-$NEW_VERSION"
-        echo "Creating branch: $BRANCH_NAME"
-        
-        git fetch origin  # Fetch latest changes from the remote
-
-        # Check if branch already exists on the remote
-        if git ls-remote --exit-code --heads origin "$BRANCH_NAME"; then
-          echo "Branch $BRANCH_NAME already exists, incrementing version..."
-          
-          # Automatically increment to the next patch version
-          PATCH=$((PATCH + 1))
-          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-          BRANCH_NAME="version-$NEW_VERSION"
-          echo "New branch name: $BRANCH_NAME"
-        fi
-
-        git checkout -b "$BRANCH_NAME"  # Create the new branch locally
-
-        # Push the new branch to GitHub
-        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
+        echo "NEW_VERSION is $NEW_VERSION"  # To verify the value of NEW_VERSION after increment
 
     - name: Install dependencies using npm
       run: npm install
