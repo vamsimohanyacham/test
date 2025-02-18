@@ -41,15 +41,31 @@ jobs:
         NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$NEW_PATCH"
         echo "New version: $NEW_VERSION"
         echo "$NEW_VERSION" > version.txt
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
+
+    - name: Verify NEW_VERSION variable
+      run: echo "NEW_VERSION is $NEW_VERSION"  # To verify the value of NEW_VERSION
 
     - name: Create and push new branch for version
       run: |
+        if [ -z "$NEW_VERSION" ]; then
+          echo "Error: NEW_VERSION is empty. Exiting."
+          exit 1
+        fi
+
         BRANCH_NAME="version-$NEW_VERSION"
+        echo "Creating branch: $BRANCH_NAME"
+        
         git fetch origin  # Fetch latest changes from the remote
-        git checkout -b "$BRANCH_NAME"
+        git checkout -b "$BRANCH_NAME"  # Create the new branch locally
+
         git add version.txt
         git commit -m "Update version to $NEW_VERSION"
-        git pull origin "$BRANCH_NAME" --rebase  # Make sure the remote branch changes are pulled
+
+        # Ensure we handle conflicts by pulling the latest changes
+        git pull origin main --rebase  # Rebase with the main branch to avoid conflicts
+
+        # Push the new branch to GitHub
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Install dependencies using npm
@@ -71,6 +87,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 
