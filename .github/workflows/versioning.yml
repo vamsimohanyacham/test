@@ -77,10 +77,34 @@ jobs:
           echo "Version updated to $NEW_VERSION"
         fi
 
-        # Push the changes to the current branch
+        # Push the changes to the current branch (main)
         git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
         
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
+
+    - name: Create new branch for version
+      run: |
+        if [ -z "$NEW_VERSION" ]; then
+          echo "Error: NEW_VERSION is empty. Exiting."
+          exit 1
+        fi
+
+        # Generate the new branch name
+        BRANCH_NAME="version-$NEW_VERSION"
+        echo "Creating branch: $BRANCH_NAME"
+        
+        # Fetch latest changes from the remote
+        git fetch origin
+
+        # Create a new branch based on the updated version
+        git checkout -b "$BRANCH_NAME"
+
+        # Add and commit version.txt in the new branch
+        git add version.txt
+        git commit -m "Create version branch for $NEW_VERSION"
+
+        # Push the new branch to GitHub
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git "$BRANCH_NAME"
 
     - name: Verify NEW_VERSION variable
       run: |
@@ -105,8 +129,6 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
-
-
 
 
 
