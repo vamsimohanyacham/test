@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_HOME = tool 'nodejs'  // Use the NodeJS tool configured in Jenkins
+        NODE_HOME = tool 'NODE_HOME'  // Use the NodeJS tool configured in Jenkins
         PATH = "${NODE_HOME}/bin:${env.PATH}:node_modules/.bin"  // Add node_modules/.bin to PATH
         ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
         ARTIFACT_VERSION = '1.0.1'  // Artifact Version (this will be the default starting version)
