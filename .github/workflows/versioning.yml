@@ -1,63 +1,72 @@
-name: Versioning and Branch Creation
+name: Versioning and Build Pipeline
 
 on:
   push:
     branches:
-      - main  # Trigger this workflow when changes are pushed to the `main` branch
-  pull_request:
-    branches:
-      - main  # Trigger this workflow on pull requests targeting the `main` branch
+      - main  # Trigger the workflow on pushes to the main branch
 
 jobs:
-  versioning:
-    runs-on: ubuntu-latest  # This can be changed to `windows-latest` or `macos-latest` if needed
+  versioning-and-build:
+    runs-on: ubuntu-latest  # You can change this to windows-latest if needed for Windows-based builds
 
     steps:
-    - name: Checkout the repository
+    - name: Checkout repository
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 1
 
-    - name: Retrieve current version from version.txt
-      id: version
+    - name: Set up Git
+      run: |
+        git config --global user.email "vamsimohanyacham@gmail.com"
+        git config --global user.name "github-actions[bot]"
+
+    - name: Retrieve version from version.txt
       run: |
         VERSION_FILE="version.txt"
         if [ -f "$VERSION_FILE" ]; then
           VERSION=$(cat $VERSION_FILE)
+          echo "Found version: $VERSION"
         else
-          VERSION="1.0.0"  # If version.txt doesn't exist, start with this version
+          echo "No version.txt found, initializing version to 1.0.0"
+          VERSION="1.0.0"
         fi
-        echo "Current Version: $VERSION"
-        # Increment the patch version
+        echo "VERSION=$VERSION" >> $GITHUB_ENV  # Export version as an environment variable
+
+    - name: Increment version
+      run: |
         IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
-        PATCH_VERSION=$((VERSION_PARTS[2] + 1))
-        NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH_VERSION"
-        echo "New Version: $NEW_VERSION"
-        echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        PATCH=${VERSION_PARTS[2]}
+        NEW_PATCH=$((PATCH + 1))
+        NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$NEW_PATCH"
+        echo "New version: $NEW_VERSION"
 
-    - name: Update version.txt with new version
-      run: |
-        echo ${{ env.VERSION }} > version.txt
-        cat version.txt
+        # Write the new version to version.txt
+        echo "$NEW_VERSION" > version.txt
 
-    - name: Commit version.txt changes
+    - name: Commit and push version.txt
       run: |
-        git config --global user.email "vamsimohanyacham@gmail.com"  # Replace with your email
-        git config --global user.name "vamsimohanyacham"  # Replace with your GitHub username
         git add version.txt
-        git commit -m "Update version to ${{ env.VERSION }}"
-        git push origin main
+        git commit -m "Update version to $NEW_VERSION"
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
 
-    - name: Create a new feature branch
+    - name: Install dependencies using npm
+      run: npm install
+
+    - name: Ensure Vite is executable
       run: |
-        BRANCH_NAME="feature/version-${{ env.VERSION }}"
-        git checkout -b $BRANCH_NAME
-        git push origin $BRANCH_NAME
+        if [ -f node_modules/.bin/vite ]; then
+          chmod +x node_modules/.bin/vite
+        fi
 
-    - name: Create a Pull Request
-      uses: peter-evans/create-pull-request@v3
-      with:
-        title: "Update version to ${{ env.VERSION }}"
-        body: "This PR updates the version in version.txt"
-        base: main
-        head: feature/version-${{ env.VERSION }}
+    - name: Build Vite app
+      run: npm run build
+
+    - name: Create .zip archive
+      run: |
+        zip -r build.zip dist/*  # Or for Windows: powershell Compress-Archive -Path dist/* -DestinationPath build.zip
+
+    - name: Deploy to Nginx
+      run: |
+        echo "Deploying to Nginx"
+        # Add your deployment script here
+
+    - name: Final success message
+      run: echo "Build and deployment completed successfully!"
