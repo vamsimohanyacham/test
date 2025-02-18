@@ -3,11 +3,14 @@ name: Versioning and Build Pipeline
 on:
   push:
     branches:
-      - main  # Trigger the workflow on pushes to the main branch
+      - main
 
 jobs:
   versioning-and-build:
-    runs-on: ubuntu-latest  # You can change this to windows-latest if needed for Windows-based builds
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Ensure GitHub Actions can push to the repo
 
     steps:
     - name: Checkout repository
@@ -16,7 +19,7 @@ jobs:
     - name: Set up Git
       run: |
         git config --global user.email "vamsimohanyacham@gmail.com"
-        git config --global user.name "github-actions[bot]"
+        git config --global user.name "vamsimohanyacham"
 
     - name: Retrieve version from version.txt
       run: |
@@ -37,8 +40,6 @@ jobs:
         NEW_PATCH=$((PATCH + 1))
         NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$NEW_PATCH"
         echo "New version: $NEW_VERSION"
-
-        # Write the new version to version.txt
         echo "$NEW_VERSION" > version.txt
 
     - name: Commit and push version.txt
@@ -61,12 +62,8 @@ jobs:
 
     - name: Create .zip archive
       run: |
-        zip -r build.zip dist/*  # Or for Windows: powershell Compress-Archive -Path dist/* -DestinationPath build.zip
+        zip -r build.zip dist/*
 
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
-        # Add your deployment script here
-
-    - name: Final success message
-      run: echo "Build and deployment completed successfully!"
