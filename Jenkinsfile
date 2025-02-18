@@ -112,10 +112,15 @@ pipeline {
             steps {
                 echo 'Pushing version.txt changes to GitHub'
                 script {
-                    // Commit and push the updated version to GitHub
+                    // Add and commit version.txt changes
                     bat 'git add version.txt'
-                    bat 'git commit -m "Update version to ${ARTIFACT_VERSION}"'
-                    bat 'git push origin main'  // Adjust branch name if needed
+                    bat "git commit -m \"Update version to ${ARTIFACT_VERSION}\""
+                    
+                    // Ensure the repository is clean before pushing
+                    bat 'git pull origin main'  // Pull latest changes from main branch
+
+                    // Push the updated version.txt to the repository
+                    bat 'git push origin main'  // Push changes to main branch
                 }
             }
         }
