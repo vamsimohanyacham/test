@@ -91,6 +91,7 @@ jobs:
 
         git checkout -b "$BRANCH_NAME"  # Create the new branch locally
 
+        # Add and commit the updated version.txt file
         git add version.txt
         git commit -m "Update version to $NEW_VERSION"
 
@@ -119,6 +120,7 @@ jobs:
     - name: Deploy to Nginx
       run: |
         echo "Deploying to Nginx"
+
 
 
 
