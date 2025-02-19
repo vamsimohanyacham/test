@@ -18,8 +18,8 @@ jobs:
 
     - name: Set up Git
       run: |
-        git config --global user.email "your-email@example.com"
-        git config --global user.name "your-username"
+        git config --global user.email "vamsimohanyacham@gmail.com"
+        git config --global user.name "vamsimohanyacham"
 
     - name: Retrieve version from version.txt
       run: |
@@ -33,7 +33,7 @@ jobs:
           echo "$VERSION" > $VERSION_FILE  # Create the file and write initial version
           git add $VERSION_FILE
           git commit -m "Initialize version to 1.0.1"
-          git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/your-username/your-repo.git HEAD:main
+          git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
         fi
         echo "VERSION=$VERSION" >> $GITHUB_ENV  # Export version as an environment variable
 
@@ -65,7 +65,7 @@ jobs:
         echo "$NEW_VERSION" > version.txt
         git add version.txt
         git commit -m "Update version to $NEW_VERSION"
-        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/your-username/your-repo.git HEAD:main
+        git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/vamsimohanyacham/test.git HEAD:main
         
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV  # Export new version for further steps
 
