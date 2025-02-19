@@ -42,5 +42,3 @@ export default function ParallaxHero() {
         </h2>
       </div>
     </div>
-  );
-}
