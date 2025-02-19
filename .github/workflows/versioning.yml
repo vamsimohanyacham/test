@@ -88,7 +88,7 @@ jobs:
     - name: Deploy to Nginx on Windows localhost
       run: |
         # Use the correct path for Nginx web root on Windows
-        SCP_DESTINATION="vamsi@localhost:C:/nginx/html"  # Replace 'vamsi' with your Windows username
+        SCP_DESTINATION="Vamsi Mohan@localhost:C:/nginx/html"  # Replace 'vamsi' with your Windows username
         
         # Copy the build files to the local Nginx folder
         scp -r ./dist/* $SCP_DESTINATION
