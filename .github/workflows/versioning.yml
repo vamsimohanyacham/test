@@ -93,13 +93,7 @@ jobs:
     - name: Deploy to Nginx on Windows localhost
       run: |
         # Use the correct path for Nginx web root on Windows
-        SCP_DESTINATION="Vamsi Mohan@localhost:C:/nginx/html"  # Replace 'vamsi' with your Windows username
-        
-        # Automatically accept the host key and copy the build files to the local Nginx folder
-        scp -o StrictHostKeyChecking=no -r ./dist/* "$SCP_DESTINATION"
-        
-        # Restart Nginx to apply the changes (if needed)
-        ssh -o StrictHostKeyChecking=no "Vamsi Mohan@localhost" 'nginx -s reload'  # Restart nginx
+       echo "deploying to nginx"
 
 
 # name: Versioning and Build Pipeline
