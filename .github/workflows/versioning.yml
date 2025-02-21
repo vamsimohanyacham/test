@@ -90,10 +90,9 @@ jobs:
         mkdir -p ~/.ssh
         ssh-keyscan -H localhost >> ~/.ssh/known_hosts
 
-    - name: Deploy to Nginx on Windows localhost
+   name: Deploy to Nginx
       run: |
-        # Use the correct path for Nginx web root on Windows
-       echo "deploying to nginx"
+         echo "Deploying to Nginx"
 
 
 # name: Versioning and Build Pipeline
