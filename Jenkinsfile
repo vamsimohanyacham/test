@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        BUILD_DIR = 'build_log/build_logs'
+        BUILD_DIR = 'build_log\\build_logs'  // Use double backslashes for Windows paths
     }
 
     stages {
@@ -24,13 +24,16 @@ pipeline {
             steps {
                 echo 'Building the project...'
 
-                // Ensure the build_log/build_logs directory exists
+                // Ensure the build_log\\build_logs directory exists
                 bat "if not exist ${BUILD_DIR} mkdir ${BUILD_DIR}"
 
                 script {
                     // Create a path for the log file using the BUILD_ID
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     echo "Path to log file: ${logFile}"
+
+                    // Check if the directory is created successfully before writing the log
+                    bat "echo Directory exists: %cd%"
 
                     // Redirect the output of the build command to the log file
                     bat """
