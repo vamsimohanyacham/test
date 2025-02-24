@@ -1,124 +1,20 @@
 pipeline {
     agent any
-
-    environment {
-        NODE_HOME = tool 'NODE_HOME'
-        PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/repository/dist/'
-        NEXUS_USER = 'admin'
-        NEXUS_PASSWORD = 'vamsi@123'
-        ARTIFACT_NAME = 'middlewaretalents'
-        ARTIFACT_VERSION = '1.0.1'
-        GROUP_ID = 'com.middlewaretalents'
-        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'
-        AZURE_RESOURCE_GROUP = 'vamsi'
-        AZURE_APP_NAME = 'vamsiweb'
-        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-        IS_LTS = 'false'
-        ERROR_PREDICTION_MODEL = 'http://your-ml-model-endpoint' // Replace with actual model endpoint
-        AZURE_ML_API_KEY = 'your-azure-api-key' // Replace with actual API key
-    }
-
+    
     stages {
-        stage('Checkout Code') {
+        stage('Build') {
             steps {
-                git branch: 'main', url: 'https://github.com/vamsimohanyacham/test.git', credentialsId: '2f167f4e-84fd-4929-8d9a-ba8f849897bd'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                bat 'npm install'
-            }
-        }
-
-        stage('Build Vite App') {
-            steps {
-                bat 'npm run build'
-            }
-        }
-
-        stage('Error Prediction') {
-            steps {
-                script {
-                    // Read build logs
-                    def buildLogs = readFile('build_log.txt')
-
-                    // Send logs to ML model for error prediction
-                    def response = httpRequest(
-                        url: ERROR_PREDICTION_MODEL,
-                        httpMode: 'POST',
-                        contentType: 'APPLICATION_JSON',
-                        acceptType: 'APPLICATION_JSON',
-                        requestBody: '{"log": "' + buildLogs + '"}',
-                        customHeaders: [[name: 'Authorization', value: "Bearer ${AZURE_ML_API_KEY}"]]
-                    )
-
-                    // Parse the prediction response (assuming a 'high' or 'low' risk)
-                    def prediction = readJSON text: response.content
-                    echo "Predicted error risk: ${prediction.error}"
-
-                    if (prediction.error == 'high') {
-                        currentBuild.result = 'FAILURE'
-                        echo "High risk of failure, aborting pipeline."
-                    } else {
-                        echo "Low risk, proceeding with deployment."
-                    }
-                }
-            }
-        }
-
-        stage('Increment Version') {
-            steps {
-                script {
-                    // Version increment logic (as per your original script)
-                }
-            }
-        }
-
-        stage('Create .zip Archive') {
-            steps {
-                script {
-                    bat "powershell Compress-Archive -Path dist\\* -DestinationPath \"${ZIP_FILE}\""
-                    echo "Created ${ZIP_FILE}"
-                }
-            }
-        }
-
-        stage('Upload to Nexus') {
-            steps {
-                script {
-                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
-                    def nexusRepositoryUrl = "${NEXUS_URL}${artifactFile}"
-                    bat """
-                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
-                    """
-                }
-            }
-        }
-
-        stage('Deploy to Nginx') {
-            steps {
-                script {
-                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
-                    echo "Moved dist folder to Nginx directory"
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            bat 'del /F /Q *.zip || true'
-        }
-        failure {
-            script {
-                echo "Pipeline failed, deploying the latest LTS version..."
-                // Fallback logic for deploying the LTS version
+                // Run your build commands (npm install, npm run build, etc.)
+                sh 'npm install'
+                sh 'npm run build'
+                
+                // Archive build logs
+                archiveArtifacts artifacts: 'build_log/**/*.log', allowEmptyArchive: true
             }
         }
     }
 }
+
 
 
 
