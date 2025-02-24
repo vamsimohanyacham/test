@@ -2,6 +2,8 @@ pipeline {
     agent any
 
     environment {
+        // Set the Python executable path here, modify based on your environment
+        PYTHON_PATH = 'C:\Users\MTL1020\AppData\Local\Programs\Python\Python39\python.exe'  // Modify this to match your Python installation
         LOG_FILE = "build_${env.BUILD_ID}.log"
         PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
     }
@@ -17,14 +19,14 @@ pipeline {
             steps {
                 script {
                     // Example build commands for Node.js or any other build tool (replace with your actual commands)
-                    bat 'npm install'   // Windows equivalent of 'npm install'
-                    bat 'npm run build'  // Windows equivalent of 'npm run build'
+                    bat 'npm install'   // Install dependencies
+                    bat 'npm run build'  // Build the project
                     
-                    // Capture the build logs
+                    // Capture the build logs with timestamps
                     bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
                     bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
                     
-                    // Archive the build logs
+                    // Archive the build logs as artifacts
                     archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
                 }
             }
@@ -35,10 +37,10 @@ pipeline {
                 script {
                     // Run Python error prediction script on Windows
                     bat """
-                        python C:/path/to/scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
+                        ${env.PYTHON_PATH} C:/path/to/scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
                     """
                     
-                    // Archive the error prediction results
+                    // Archive the prediction results as artifacts
                     archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
                 }
             }
@@ -48,15 +50,12 @@ pipeline {
     post {
         always {
             echo "Cleaning up build files"
-            bat 'del ${LOG_FILE} ${PREDICTION_RESULT}'  // Clean up temp files in Windows
+            
+            // Clean up log and prediction result files after the pipeline runs
+            bat "del ${env.LOG_FILE} ${env.PREDICTION_RESULT}"  // Clean up temp files in Windows
         }
     }
 }
-
-
-
-
-
 
 
 // pipeline {
