@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Set the Python executable path here, modify based on your environment
-        PYTHON_PATH = 'C:\Users\MTL1020\AppData\Local\Programs\Python\Python39\python.exe'  // Modify this to match your Python installation
+        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe'  // Update this path as needed
         LOG_FILE = "build_${env.BUILD_ID}.log"
         PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
     }
@@ -19,14 +18,14 @@ pipeline {
             steps {
                 script {
                     // Example build commands for Node.js or any other build tool (replace with your actual commands)
-                    bat 'npm install'   // Install dependencies
-                    bat 'npm run build'  // Build the project
+                    bat 'npm install'   // Windows equivalent of 'npm install'
+                    bat 'npm run build'  // Windows equivalent of 'npm run build'
                     
-                    // Capture the build logs with timestamps
+                    // Capture the build logs
                     bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
                     bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
                     
-                    // Archive the build logs as artifacts
+                    // Archive the build logs
                     archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
                 }
             }
@@ -40,7 +39,7 @@ pipeline {
                         ${env.PYTHON_PATH} C:/path/to/scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
                     """
                     
-                    // Archive the prediction results as artifacts
+                    // Archive the error prediction results
                     archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
                 }
             }
@@ -50,12 +49,11 @@ pipeline {
     post {
         always {
             echo "Cleaning up build files"
-            
-            // Clean up log and prediction result files after the pipeline runs
-            bat "del ${env.LOG_FILE} ${env.PREDICTION_RESULT}"  // Clean up temp files in Windows
+            bat 'del ${LOG_FILE} ${PREDICTION_RESULT}'  // Clean up temp files in Windows
         }
     }
 }
+
 
 
 // pipeline {
