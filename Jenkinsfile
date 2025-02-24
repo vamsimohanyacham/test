@@ -26,37 +26,37 @@ pipeline {
         stage('Post Build Actions') {
             steps {
                 script {
-                    def BUILD_STATUS = currentBuild.currentResult // Capture the status of the build
+                    def BUILD_STATUS = currentBuild.currentResult
                     echo "Build Status: ${BUILD_STATUS}"
 
-                    // Assuming logs and predictions are generated in specific directories
+                    // Define log file path (inside build_logs)
                     def logFile = "build_logs/build_${env.BUILD_ID}.log"
                     def predictionFile = "prediction_results/prediction_${env.BUILD_ID}.json"
 
-                    // List files to check if they exist
+                    // Ensure directories exist and check the logs
                     bat 'dir build_logs'
                     bat 'dir prediction_results'
 
-                    // Check if build is successful
+                    // If build is successful, handle files
                     if (BUILD_STATUS == 'SUCCESS') {
                         echo "Build successful, saving logs and prediction data."
                         
-                        // Check if the files exist before adding them to git
+                        // Example command to add the log and prediction result to Git
                         if (fileExists(logFile) && fileExists(predictionFile)) {
                             bat "git add -f ${logFile} ${predictionFile}"
                             bat 'git commit -m "Add build logs and prediction results" || echo "Nothing to commit"'
-                            bat 'git push origin main'  // Push changes to GitHub
+                            bat 'git push origin main'
                         } else {
                             echo "Log or prediction file is missing!"
                         }
                     } else {
                         echo "Build failed, saving failure logs."
-
+                        
                         // Force add the build log in case of failure
                         if (fileExists(logFile)) {
                             bat "git add -f ${logFile}"
                             bat 'git commit -m "Build failed - capture logs" || echo "Nothing to commit"'
-                            bat 'git push origin main'  // Push failure logs
+                            bat 'git push origin main'
                         } else {
                             echo "Log file is missing for failure!"
                         }
@@ -69,7 +69,7 @@ pipeline {
     post {
         always {
             echo "Cleaning up after the build"
-            // Check if log files exist before attempting to delete them
+            // Clean up the build logs and prediction results
             bat 'if exist build_logs\\*.log del /q build_logs\\*.log || echo "No log files to delete"'
             bat 'if exist prediction_results\\*.json del /q prediction_results\\*.json || echo "No prediction files to delete"'
         }
