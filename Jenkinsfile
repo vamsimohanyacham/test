@@ -5,6 +5,7 @@ pipeline {
         PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe'  // Update this path if necessary
         LOG_FILE = "build_${env.BUILD_ID}.log"
         PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
+        BUILD_STATUS = "failure" // Default status is failure
     }
 
     stages {
@@ -17,13 +18,22 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Example build commands for Node.js or any other build tool (replace with your actual commands)
-                    bat 'npm install'   // Windows equivalent of 'npm install'
-                    bat 'npm run build'  // Windows equivalent of 'npm run build'
-                    
-                    // Capture the build logs
-                    bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
-                    bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
+                    // Run build commands and capture logs
+                    try {
+                        bat 'npm install'   // Windows equivalent of 'npm install'
+                        bat 'npm run build'  // Windows equivalent of 'npm run build'
+                        
+                        // Capture the build logs
+                        bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
+                        bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
+                        
+                        // Mark the build as successful
+                        env.BUILD_STATUS = 'success'
+                    } catch (Exception e) {
+                        // Capture any build failure in the log
+                        bat "echo Build failed at: ${new Date()} >> ${env.LOG_FILE}"
+                        throw e // Re-throw the exception to fail the build
+                    }
                     
                     // Archive the build logs
                     archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
@@ -34,13 +44,24 @@ pipeline {
         stage('Error Prediction') {
             steps {
                 script {
-                    // Run Python error prediction script on Windows (use the correct relative path)
-                    bat """
-                        ${env.PYTHON_PATH} scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
-                    """
-                    
-                    // Archive the error prediction results
-                    archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
+                    // If the build fails, skip the prediction stage
+                    if (env.BUILD_STATUS == 'success') {
+                        try {
+                            // Run Python error prediction script on Windows (use the correct relative path)
+                            bat """
+                                ${env.PYTHON_PATH} scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
+                            """
+                            
+                            // Archive the error prediction results
+                            archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
+                        } catch (Exception e) {
+                            // Log any error prediction failure
+                            bat "echo Error prediction failed at: ${new Date()} >> ${env.LOG_FILE}"
+                            throw e
+                        }
+                    } else {
+                        echo "Skipping Error Prediction due to build failure."
+                    }
                 }
             }
         }
@@ -48,11 +69,32 @@ pipeline {
 
     post {
         always {
+            script {
+                // Always print the status to the console
+                echo "Build Status: ${env.BUILD_STATUS}"
+
+                // Commit build logs to the repository
+                if (env.BUILD_STATUS == 'success') {
+                    // Commit build logs and prediction results if successful
+                    bat "git add ${env.LOG_FILE} ${env.PREDICTION_RESULT}"
+                    bat 'git commit -m "Add build logs and prediction results" || echo "Nothing to commit"'
+                    bat 'git push origin main' // Push changes back to the repository
+                } else {
+                    // If build fails, commit failure logs
+                    bat "git add ${env.LOG_FILE}"
+                    bat 'git commit -m "Build failed - capture logs" || echo "Nothing to commit"'
+                    bat 'git push origin main' // Push failure logs
+                }
+            }
+        }
+
+        cleanup {
             echo "Cleaning up build files"
             bat "del ${LOG_FILE} ${PREDICTION_RESULT}"  // Clean up temp files in Windows
         }
     }
 }
+
 
 
 
