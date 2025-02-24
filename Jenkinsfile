@@ -1,32 +1,27 @@
 pipeline {
     agent any
 
-    environment {
-        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe'  // Update this path if necessary
-        LOG_FILE = "build_${env.BUILD_ID}.log"
-        PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    // Install dependencies and log the output to build_logs.log
+                    bat 'npm install > build_logs.log 2>&1'
+                }
             }
         }
 
         stage('Build') {
             steps {
                 script {
-                    // Example build commands for Node.js or any other build tool (replace with your actual commands)
-                    bat 'npm install'   // Windows equivalent of 'npm install'
-                    bat 'npm run build'  // Windows equivalent of 'npm run build'
-                    
-                    // Capture the build logs
-                    bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
-                    bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
-                    
-                    // Archive the build logs
-                    archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
+                    // Run the build command and capture the output to build_logs.log
+                    bat 'npm run build > build_logs.log 2>&1'
                 }
             }
         }
@@ -34,25 +29,29 @@ pipeline {
         stage('Error Prediction') {
             steps {
                 script {
-                    // Run Python error prediction script on Windows (use the correct relative path)
-                    bat """
-                        ${env.PYTHON_PATH} scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
-                    """
-                    
-                    // Archive the error prediction results
-                    archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
+                    // Run the error prediction Python script using the build log and save the result
+                    bat 'python scripts/error_prediction.py --log_file=build_logs.log --prediction_file=prediction.json'
                 }
             }
         }
-    }
 
-    post {
-        always {
-            echo "Cleaning up build files"
-            bat "del ${LOG_FILE} ${PREDICTION_RESULT}"  // Clean up temp files in Windows
+        stage('Archive Artifacts') {
+            steps {
+                // Archive the build logs and prediction result as artifacts
+                archiveArtifacts artifacts: 'build_logs.log', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'prediction.json', allowEmptyArchive: true
+            }
+        }
+
+        stage('Post Build Cleanup') {
+            steps {
+                // Clean up the workspace by removing the logs and prediction files
+                cleanWs()
+            }
         }
     }
 }
+
 
 
 
