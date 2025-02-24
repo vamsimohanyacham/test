@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe'  // Update this path as needed
+        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe'  // Update this path if necessary
         LOG_FILE = "build_${env.BUILD_ID}.log"
         PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
     }
@@ -34,9 +34,9 @@ pipeline {
         stage('Error Prediction') {
             steps {
                 script {
-                    // Run Python error prediction script on Windows
+                    // Run Python error prediction script on Windows (use the correct relative path)
                     bat """
-                        ${env.PYTHON_PATH} C:/path/to/scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
+                        ${env.PYTHON_PATH} scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
                     """
                     
                     // Archive the error prediction results
@@ -49,10 +49,11 @@ pipeline {
     post {
         always {
             echo "Cleaning up build files"
-            bat 'del ${LOG_FILE} ${PREDICTION_RESULT}'  // Clean up temp files in Windows
+            bat "del ${LOG_FILE} ${PREDICTION_RESULT}"  // Clean up temp files in Windows
         }
     }
 }
+
 
 
 
