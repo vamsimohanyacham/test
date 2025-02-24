@@ -1,15 +1,25 @@
 pipeline {
     agent any
     
+    environment {
+        LOG_FILE = "build_${env.BUILD_ID}.log"
+    }
+    
     stages {
         stage('Build') {
             steps {
-                // Run your build commands (npm install, npm run build, etc.)
-                sh 'npm install'
-                sh 'npm run build'
-                
-                // Archive build logs
-                archiveArtifacts artifacts: 'build_log/**/*.log', allowEmptyArchive: true
+                script {
+                    // Build commands here
+                    sh 'npm install'
+                    sh 'npm run build'
+                    
+                    // Write build logs to a specific file
+                    sh "echo 'Build started at: ${new Date()}' > ${env.LOG_FILE}"
+                    sh "echo 'Build completed at: ${new Date()}' >> ${env.LOG_FILE}"
+                    
+                    // Archive logs
+                    archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
+                }
             }
         }
     }
