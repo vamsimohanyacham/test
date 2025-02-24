@@ -1,26 +1,49 @@
 pipeline {
     agent any
-    
+
     environment {
         LOG_FILE = "build_${env.BUILD_ID}.log"
+        PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
     }
-    
+
     stages {
         stage('Build') {
             steps {
                 script {
-                    // Build commands here
+                    // Run build commands
                     sh 'npm install'
                     sh 'npm run build'
                     
-                    // Write build logs to a specific file
+                    // Capture the build logs
                     sh "echo 'Build started at: ${new Date()}' > ${env.LOG_FILE}"
                     sh "echo 'Build completed at: ${new Date()}' >> ${env.LOG_FILE}"
                     
-                    // Archive logs
+                    // Archive the build logs
                     archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
                 }
             }
+        }
+
+        stage('Error Prediction') {
+            steps {
+                script {
+                    // Run the Python error prediction script
+                    // This will analyze the build log and predict possible errors
+                    sh """
+                        python3 scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
+                    """
+                    
+                    // Archive the error prediction results
+                    archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Cleaning up build files"
+            sh 'rm -f ${LOG_FILE} ${PREDICTION_RESULT}'  // Clean up any temp files created during the build
         }
     }
 }
