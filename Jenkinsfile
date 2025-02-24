@@ -19,18 +19,16 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                
-                // Add debugging to check workspace and directory existence
-                echo 'Workspace: ' + env.WORKSPACE
-                
-                // Create the build_log directory if it doesn't exist
-                bat 'if not exist build_log\\build_logs mkdir build_log\\build_logs'
-                
-                // Check if the directory was created
-                bat 'dir build_log\\build_logs'
 
-                // Run the build and redirect output to a log file in the build_log directory
-                bat 'npm run build > build_log\\build_logs\\build_${env.BUILD_ID}.log 2>&1'  
+                // Create the build_log/build_logs directory if it doesn't exist
+                bat 'if not exist build_log\\build_logs mkdir build_log\\build_logs'
+
+                // Debugging: Show workspace path
+                echo 'Workspace: ' + env.WORKSPACE
+                echo 'Path to log file: ' + "${env.WORKSPACE}\\build_log\\build_logs\\build_${env.BUILD_ID}.log"
+
+                // Run the build command and capture logs in the specified directory
+                bat "npm run build > ${env.WORKSPACE}\\build_log\\build_logs\\build_${env.BUILD_ID}.log 2>&1"
             }
         }
 
@@ -40,11 +38,11 @@ pipeline {
                     def BUILD_STATUS = currentBuild.currentResult
                     echo "Build Status: ${BUILD_STATUS}"
 
-                    // Define the path for the log file
-                    def logFile = "build_log/build_logs/build_${env.BUILD_ID}.log"
-                    def predictionFile = "prediction_results/prediction_${env.BUILD_ID}.json"
+                    // Define the absolute path for the log file
+                    def logFile = "${env.WORKSPACE}\\build_log\\build_logs\\build_${env.BUILD_ID}.log"
+                    def predictionFile = "${env.WORKSPACE}\\prediction_results\\prediction_${env.BUILD_ID}.json"
 
-                    // Add more debugging to check file existence
+                    // Add more debugging to check if the log and prediction files exist
                     echo "Checking if log file exists: ${logFile}"
                     if (fileExists(logFile)) {
                         echo "Log file exists, adding to Git."
