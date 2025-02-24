@@ -1,22 +1,32 @@
-import sys
+import argparse
 import json
 
+# Example prediction function (you can replace this with machine learning or heuristic logic)
 def predict_error(log_file):
-    try:
-        with open(log_file, 'r') as f:
-            logs = f.read()
+    with open(log_file, 'r') as f:
+        logs = f.read()
 
-        # Example heuristic: if error messages are found, return a prediction
-        if 'ERROR' in logs or 'FAIL' in logs:
-            return {'error': 'Build failure detected', 'severity': 'high'}
-        else:
-            return {'error': 'Build succeeded', 'severity': 'low'}
+    # Example: If any "error" is found in the logs, predict a failure
+    if "error" in logs.lower():
+        return {"status": "fail", "message": "Possible error detected in the logs."}
+    else:
+        return {"status": "success", "message": "Build seems to be fine."}
 
-    except Exception as e:
-        return {'error': str(e), 'severity': 'unknown'}
+def main():
+    parser = argparse.ArgumentParser(description="Error prediction based on build logs")
+    parser.add_argument('--log_file', required=True, help='Path to the build log file')
+    parser.add_argument('--prediction_file', required=True, help='Path to save the prediction result')
 
-if __name__ == '__main__':
-    log_file = sys.argv[1]
-    prediction = predict_error(log_file)
-    with open(f'../build_log/prediction_results/build_error_predictions_{log_file.split("/")[-1]}.json', 'w') as f:
-        json.dump(prediction, f)
+    args = parser.parse_args()
+
+    # Run error prediction
+    result = predict_error(args.log_file)
+
+    # Save the prediction result to a JSON file
+    with open(args.prediction_file, 'w') as f:
+        json.dump(result, f, indent=4)
+
+    print(f"Prediction saved to {args.prediction_file}")
+
+if __name__ == "__main__":
+    main()
