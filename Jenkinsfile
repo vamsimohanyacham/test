@@ -26,17 +26,25 @@ pipeline {
                 script {
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     echo "Path to log file: ${logFile}"
-                    bat "if not exist ${BUILD_DIR} mkdir ${BUILD_DIR}" // Create the log directory if it doesn't exist
-                    bat "npm run build > ${logFile} 2>&1" // Save build logs to a file
+                    
+                    // Ensure the build_log/build_logs directory exists
+                    bat "if not exist ${BUILD_DIR} mkdir ${BUILD_DIR}"
+                    
+                    // Run the build and capture output in log file
+                    bat """
+                        echo "Starting build..." > ${logFile}  // Writing initial content to the log
+                        npm run build >> ${logFile} 2>&1   // Capture the build output to the log file
+                    """
+                    
+                    // Optionally print log content to console for debugging
+                    bat "type ${logFile}"
                 }
             }
         }
 
-        // Optional: you can have a post-build action if needed
         stage('Post Build Actions') {
             steps {
                 echo "Build finished. Logs saved."
-                // Add any other actions after the build, like archiving artifacts, etc.
             }
         }
     }
@@ -44,7 +52,6 @@ pipeline {
     post {
         always {
             echo "Build completed."
-            // You can include other actions like archiving build artifacts here if necessary.
         }
     }
 }
