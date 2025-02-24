@@ -35,8 +35,12 @@ pipeline {
                     // Check if the directory exists before proceeding
                     bat "if exist ${BUILD_DIR} echo Directory exists! || echo Directory creation failed."
 
+                    // Get the current date/time (using Groovy to capture date)
+                    def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
+                    echo "Current date: ${currentDate}"
+
                     // Write an initial entry into the log file to confirm writing
-                    bat "echo 'Starting build at: $(date)' > ${logFile}"
+                    bat "echo 'Starting build at: ${currentDate}' > ${logFile}"
 
                     // Run the build command and append the output to the log file
                     bat "npm run build >> ${logFile} 2>&1"
