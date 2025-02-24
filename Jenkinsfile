@@ -2,31 +2,31 @@ pipeline {
     agent any
 
     environment {
-        // Define any necessary environment variables here
-        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe' // Make sure this is correct
+        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe'  // Update this path if necessary
+        LOG_FILE = "build_${env.BUILD_ID}.log"
+        PREDICTION_RESULT = "prediction_${env.BUILD_ID}.json"
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
                 checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    // Install npm dependencies
-                    bat 'npm install 1>build_logs.log 2>&1'
-                }
             }
         }
 
         stage('Build') {
             steps {
                 script {
-                    // Run npm build command
-                    bat 'npm run build 1>build_logs.log 2>&1'
+                    // Example build commands for Node.js or any other build tool (replace with your actual commands)
+                    bat 'npm install'   // Windows equivalent of 'npm install'
+                    bat 'npm run build'  // Windows equivalent of 'npm run build'
+                    
+                    // Capture the build logs
+                    bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
+                    bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
+                    
+                    // Archive the build logs
+                    archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
                 }
             }
         }
@@ -34,34 +34,13 @@ pipeline {
         stage('Error Prediction') {
             steps {
                 script {
-                    // Verify Python installation
-                    bat 'python --version'
-
-                    // Run the error prediction Python script with the log file and save the result
-                    bat "${PYTHON_PATH} scripts/error_prediction.py --log_file=build_logs.log --prediction_file=prediction.json"
-
-                    // Archive the prediction result file
-                    archiveArtifacts artifacts: 'prediction.json', allowEmptyArchive: true
-                }
-            }
-        }
-
-        stage('Archive Artifacts') {
-            steps {
-                script {
-                    // Archive build logs and other artifacts
-                    archiveArtifacts artifacts: 'build_logs.log', allowEmptyArchive: true
-                    archiveArtifacts artifacts: 'prediction.json', allowEmptyArchive: true
-                }
-            }
-        }
-
-        stage('Post Build Cleanup') {
-            steps {
-                script {
-                    // Clean up the files
-                    bat 'del build_logs.log'
-                    bat 'del prediction.json'
+                    // Run Python error prediction script on Windows (use the correct relative path)
+                    bat """
+                        ${env.PYTHON_PATH} scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
+                    """
+                    
+                    // Archive the error prediction results
+                    archiveArtifacts artifacts: "${env.PREDICTION_RESULT}", allowEmptyArchive: true
                 }
             }
         }
@@ -69,18 +48,8 @@ pipeline {
 
     post {
         always {
-            // Always clean up the workspace after the build
-            cleanWs()
-        }
-
-        success {
-            // Actions to take when the build succeeds (e.g., notify or log success)
-            echo 'Build and prediction were successful!'
-        }
-
-        failure {
-            // Actions to take when the build fails (e.g., notify or log failure)
-            echo 'Build failed. Please check the logs for errors.'
+            echo "Cleaning up build files"
+            bat "del ${LOG_FILE} ${PREDICTION_RESULT}"  // Clean up temp files in Windows
         }
     }
 }
