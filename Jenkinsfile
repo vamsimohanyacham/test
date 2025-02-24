@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        // Define any necessary environment variables here
+        PYTHON_PATH = 'C:/Users/MTL1020/AppData/Local/Programs/Python/Python39/python.exe' // Make sure this is correct
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
@@ -11,8 +16,8 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Install dependencies and log the output to build_logs.log
-                    bat 'npm install > build_logs.log 2>&1'
+                    // Install npm dependencies
+                    bat 'npm install 1>build_logs.log 2>&1'
                 }
             }
         }
@@ -20,8 +25,8 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Run the build command and capture the output to build_logs.log
-                    bat 'npm run build > build_logs.log 2>&1'
+                    // Run npm build command
+                    bat 'npm run build 1>build_logs.log 2>&1'
                 }
             }
         }
@@ -29,29 +34,56 @@ pipeline {
         stage('Error Prediction') {
             steps {
                 script {
-                    // Run the error prediction Python script using the build log and save the result
-                    bat 'python scripts/error_prediction.py --log_file=build_logs.log --prediction_file=prediction.json'
+                    // Verify Python installation
+                    bat 'python --version'
+
+                    // Run the error prediction Python script with the log file and save the result
+                    bat "${PYTHON_PATH} scripts/error_prediction.py --log_file=build_logs.log --prediction_file=prediction.json"
+
+                    // Archive the prediction result file
+                    archiveArtifacts artifacts: 'prediction.json', allowEmptyArchive: true
                 }
             }
         }
 
         stage('Archive Artifacts') {
             steps {
-                // Archive the build logs and prediction result as artifacts
-                archiveArtifacts artifacts: 'build_logs.log', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'prediction.json', allowEmptyArchive: true
+                script {
+                    // Archive build logs and other artifacts
+                    archiveArtifacts artifacts: 'build_logs.log', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'prediction.json', allowEmptyArchive: true
+                }
             }
         }
 
         stage('Post Build Cleanup') {
             steps {
-                // Clean up the workspace by removing the logs and prediction files
-                cleanWs()
+                script {
+                    // Clean up the files
+                    bat 'del build_logs.log'
+                    bat 'del prediction.json'
+                }
             }
         }
     }
-}
 
+    post {
+        always {
+            // Always clean up the workspace after the build
+            cleanWs()
+        }
+
+        success {
+            // Actions to take when the build succeeds (e.g., notify or log success)
+            echo 'Build and prediction were successful!'
+        }
+
+        failure {
+            // Actions to take when the build fails (e.g., notify or log failure)
+            echo 'Build failed. Please check the logs for errors.'
+        }
+    }
+}
 
 
 
