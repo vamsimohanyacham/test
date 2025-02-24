@@ -28,7 +28,7 @@ pipeline {
                 bat "if not exist ${BUILD_DIR} mkdir ${BUILD_DIR}"
 
                 script {
-                    // Create a path for the log file using the BUILD_ID
+                    // Define the log file path using the BUILD_ID
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     echo "Path to log file: ${logFile}"
 
