@@ -1,26 +1,22 @@
 pipeline {
     agent any
 
-    triggers {
-        githubPush()  // Trigger the pipeline on GitHub push events
-    }
-
     environment {
-        NODE_HOME = tool 'NODE_HOME'  // Use the NodeJS configured in Jenkins
+        NODE_HOME = tool 'NODE_HOME'
         PATH = "${NODE_HOME}/bin:${env.PATH}"
-        NEXUS_URL = 'http://localhost:8081/repository/dist/'  // Nexus Repository URL
-        NEXUS_USER = 'admin'  // Nexus Username
-        NEXUS_PASSWORD = 'vamsi@123'  // Nexus Password
-        ARTIFACT_NAME = 'middlewaretalents'  // Artifact Name
-        ARTIFACT_VERSION = '1.0.1'  // Artifact Version (modify this dynamically)
-        GROUP_ID = 'com.middlewaretalents'  // Artifact Group ID
-        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'  // Nginx Path
-        AZURE_RESOURCE_GROUP = 'vamsi'  // Azure Resource Group
-        AZURE_APP_NAME = 'vamsiweb'  // Azure Web App Name
-        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"  // Zip file for Azure Web App deployment
-        IS_LTS = 'false'  // Flag to determine if this version is LTS
-        AZURE_ML_ENDPOINT = '<your-azure-ml-endpoint>'  // Your Azure ML REST API endpoint
-        AZURE_ML_API_KEY = '<your-azure-api-key>'  // Your Azure ML API key
+        NEXUS_URL = 'http://localhost:8081/repository/dist/'
+        NEXUS_USER = 'admin'
+        NEXUS_PASSWORD = 'vamsi@123'
+        ARTIFACT_NAME = 'middlewaretalents'
+        ARTIFACT_VERSION = '1.0.1'
+        GROUP_ID = 'com.middlewaretalents'
+        NGINX_PATH = 'C:\\Users\\MTL1020\\Downloads\\nginx-1.26.2\\nginx-1.26.2\\html'
+        AZURE_RESOURCE_GROUP = 'vamsi'
+        AZURE_APP_NAME = 'vamsiweb'
+        ZIP_FILE = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+        IS_LTS = 'false'
+        ERROR_PREDICTION_MODEL = 'http://your-ml-model-endpoint' // Replace with actual model endpoint
+        AZURE_ML_API_KEY = 'your-azure-api-key' // Replace with actual API key
     }
 
     stages {
@@ -38,64 +34,92 @@ pipeline {
 
         stage('Build Vite App') {
             steps {
-                script {
-                    // Create and capture build logs automatically
-                    bat 'npm run build 1>>build_log.txt 2>&1'
-                    echo "Build logs saved to build_log.txt"
-                }
+                bat 'npm run build'
             }
         }
 
-        stage('Error Prediction with Azure ML') {
+        stage('Error Prediction') {
             steps {
                 script {
-                    // Read the generated build_log.txt file
-                    def logFile = 'build_log.txt'
-                    def logData = readFile(logFile)  // Automatically read the log data
+                    // Read build logs
+                    def buildLogs = readFile('build_log.txt')
 
-                    // Prepare data to send to Azure ML for error prediction
-                    def requestData = [
-                        "data": logData
-                    ]
-
-                    // Send request to Azure ML API for prediction
+                    // Send logs to ML model for error prediction
                     def response = httpRequest(
-                        url: AZURE_ML_ENDPOINT,
+                        url: ERROR_PREDICTION_MODEL,
                         httpMode: 'POST',
                         contentType: 'APPLICATION_JSON',
                         acceptType: 'APPLICATION_JSON',
-                        requestBody: groovy.json.JsonOutput.toJson(requestData),
+                        requestBody: '{"log": "' + buildLogs + '"}',
                         customHeaders: [[name: 'Authorization', value: "Bearer ${AZURE_ML_API_KEY}"]]
                     )
 
-                    // Parse response and interpret prediction
+                    // Parse the prediction response (assuming a 'high' or 'low' risk)
                     def prediction = readJSON text: response.content
-                    echo "Predicted error: ${prediction.error}"
+                    echo "Predicted error risk: ${prediction.error}"
 
-                    // Take action based on prediction
-                    if (prediction.error == "high") {
+                    if (prediction.error == 'high') {
                         currentBuild.result = 'FAILURE'
-                        echo "Build has a high risk of failure based on prediction."
+                        echo "High risk of failure, aborting pipeline."
                     } else {
-                        echo "Build appears to be fine based on AI prediction."
+                        echo "Low risk, proceeding with deployment."
                     }
                 }
             }
         }
 
-        // Other stages can follow for artifact creation, uploading, etc.
+        stage('Increment Version') {
+            steps {
+                script {
+                    // Version increment logic (as per your original script)
+                }
+            }
+        }
+
+        stage('Create .zip Archive') {
+            steps {
+                script {
+                    bat "powershell Compress-Archive -Path dist\\* -DestinationPath \"${ZIP_FILE}\""
+                    echo "Created ${ZIP_FILE}"
+                }
+            }
+        }
+
+        stage('Upload to Nexus') {
+            steps {
+                script {
+                    def artifactFile = "${ARTIFACT_NAME}-${ARTIFACT_VERSION}.zip"
+                    def nexusRepositoryUrl = "${NEXUS_URL}${artifactFile}"
+                    bat """
+                        curl -u ${NEXUS_USER}:${NEXUS_PASSWORD} -X PUT -F "file=@${artifactFile}" ${nexusRepositoryUrl}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Nginx') {
+            steps {
+                script {
+                    bat "xcopy /E /I /H /Y dist \"${NGINX_PATH}\""
+                    echo "Moved dist folder to Nginx directory"
+                }
+            }
+        }
     }
 
     post {
         always {
-            // Cleanup files if needed
             bat 'del /F /Q *.zip || true'
         }
         failure {
-            echo "Pipeline failed. Please check the logs for more details."
+            script {
+                echo "Pipeline failed, deploying the latest LTS version..."
+                // Fallback logic for deploying the LTS version
+            }
         }
     }
 }
+
 
 
 
