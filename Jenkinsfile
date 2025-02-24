@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Use double backslashes for Windows paths
+        BUILD_DIR = 'build_log\\build_logs'  // Ensure correct Windows path format
     }
 
     stages {
@@ -32,14 +32,11 @@ pipeline {
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     echo "Path to log file: ${logFile}"
 
-                    // Check if the directory is created successfully before writing the log
-                    bat "echo Directory exists: %cd%"
+                    // Create the log file and write the initial content
+                    bat "echo Starting build... > ${logFile}"
 
-                    // Redirect the output of the build command to the log file
-                    bat """
-                        echo "Starting build..." > ${logFile}  // Writing initial content to the log
-                        npm run build >> ${logFile} 2>&1      // Capture the build output to the log file
-                    """
+                    // Run the build command and capture the output in the log file
+                    bat "npm run build >> ${logFile} 2>&1"
                 }
             }
         }
