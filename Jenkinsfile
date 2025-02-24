@@ -7,16 +7,22 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build') {
             steps {
                 script {
-                    // Run build commands
-                    sh 'npm install'
-                    sh 'npm run build'
+                    // Example build commands for Node.js or any other build tool (replace with your actual commands)
+                    bat 'npm install'   // Windows equivalent of 'npm install'
+                    bat 'npm run build'  // Windows equivalent of 'npm run build'
                     
                     // Capture the build logs
-                    sh "echo 'Build started at: ${new Date()}' > ${env.LOG_FILE}"
-                    sh "echo 'Build completed at: ${new Date()}' >> ${env.LOG_FILE}"
+                    bat "echo Build started at: ${new Date()} > ${env.LOG_FILE}"
+                    bat "echo Build completed at: ${new Date()} >> ${env.LOG_FILE}"
                     
                     // Archive the build logs
                     archiveArtifacts artifacts: "${env.LOG_FILE}", allowEmptyArchive: true
@@ -27,10 +33,9 @@ pipeline {
         stage('Error Prediction') {
             steps {
                 script {
-                    // Run the Python error prediction script
-                    // This will analyze the build log and predict possible errors
-                    sh """
-                        python3 scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
+                    // Run Python error prediction script on Windows
+                    bat """
+                        python C:/path/to/scripts/error_prediction.py --log_file=${env.LOG_FILE} --prediction_file=${env.PREDICTION_RESULT}
                     """
                     
                     // Archive the error prediction results
@@ -43,10 +48,11 @@ pipeline {
     post {
         always {
             echo "Cleaning up build files"
-            sh 'rm -f ${LOG_FILE} ${PREDICTION_RESULT}'  // Clean up any temp files created during the build
+            bat 'del ${LOG_FILE} ${PREDICTION_RESULT}'  // Clean up temp files in Windows
         }
     }
 }
+
 
 
 
