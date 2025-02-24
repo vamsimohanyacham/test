@@ -20,14 +20,21 @@ pipeline {
             steps {
                 echo 'Building the project...'
 
-                // Create the build_log/build_logs directory if it doesn't exist
-                bat 'if not exist build_log\\build_logs mkdir build_log\\build_logs'
+                // Ensure the build_log/build_logs directory exists
+                bat '''
+                    if not exist build_log mkdir build_log
+                    if not exist build_log\\build_logs mkdir build_log\\build_logs
+                '''
 
-                // Debugging: Show workspace path
+                // Debugging: Check if the directories exist
+                echo 'Checking if build_log/build_logs exists...'
+                bat 'dir build_log\\build_logs'
+
+                // Debug: Show workspace path
                 echo 'Workspace: ' + env.WORKSPACE
                 echo 'Path to log file: ' + "${env.WORKSPACE}\\build_log\\build_logs\\build_${env.BUILD_ID}.log"
 
-                // Run the build command and capture logs in the specified directory
+                // Run the build command and capture logs
                 bat "npm run build > ${env.WORKSPACE}\\build_log\\build_logs\\build_${env.BUILD_ID}.log 2>&1"
             }
         }
