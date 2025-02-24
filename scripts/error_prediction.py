@@ -1,12 +1,11 @@
 import argparse
 import json
 
-# Example prediction function (you can replace this with machine learning or heuristic logic)
+# Example prediction function
 def predict_error(log_file):
     with open(log_file, 'r') as f:
         logs = f.read()
 
-    # Example: If any "error" is found in the logs, predict a failure
     if "error" in logs.lower():
         return {"status": "fail", "message": "Possible error detected in the logs."}
     else:
