@@ -22,12 +22,14 @@ pipeline {
 
                 // Ensure the build_log/build_logs directory exists
                 bat '''
+                    echo "Checking if build_log directory exists..."
                     if not exist build_log mkdir build_log
+                    echo "Checking if build_log\\build_logs directory exists..."
                     if not exist build_log\\build_logs mkdir build_log\\build_logs
                 '''
 
                 // Debugging: Check if the directories exist
-                echo 'Checking if build_log/build_logs exists...'
+                echo 'Checking if build_log\\build_logs exists...'
                 bat 'dir build_log\\build_logs'
 
                 // Debug: Show workspace path
