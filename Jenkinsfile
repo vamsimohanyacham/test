@@ -33,6 +33,10 @@ pipeline {
                     def logFile = "build_logs/build_${env.BUILD_ID}.log"
                     def predictionFile = "prediction_results/prediction_${env.BUILD_ID}.json"
 
+                    // List files to check if they exist
+                    bat 'dir build_logs'
+                    bat 'dir prediction_results'
+
                     // Check if build is successful
                     if (BUILD_STATUS == 'SUCCESS') {
                         echo "Build successful, saving logs and prediction data."
@@ -65,9 +69,9 @@ pipeline {
     post {
         always {
             echo "Cleaning up after the build"
-            // Clean up any temporary files if necessary using Windows-friendly delete commands
-            bat 'del /q build_logs\\*.log || echo "No log files to delete"'
-            bat 'del /q prediction_results\\*.json || echo "No prediction files to delete"'
+            // Check if log files exist before attempting to delete them
+            bat 'if exist build_logs\\*.log del /q build_logs\\*.log || echo "No log files to delete"'
+            bat 'if exist prediction_results\\*.json del /q prediction_results\\*.json || echo "No prediction files to delete"'
         }
 
         success {
