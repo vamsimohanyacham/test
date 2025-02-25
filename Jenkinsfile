@@ -8,8 +8,8 @@ pipeline {
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
         CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to the CSV file where build data is stored
-        GIT_USER = 'vamsimohanyacham'  // Replace with your GitHub username
-        GIT_EMAIL = 'vamsimohanyacham@gmail.com'  // Replace with your email address
+        GIT_USER = 'your-git-username'  // Replace with your GitHub username
+        GIT_EMAIL = 'your-email@example.com'  // Replace with your email address
     }
 
     stages {
@@ -105,8 +105,8 @@ pipeline {
                 bat appendCsvCommand
             }
 
-            // Commit and push the changes to GitHub after appending to CSV
-            echo "Committing and pushing changes to GitHub..."
+            // Commit and push only the 'scripts' folder to GitHub
+            echo "Committing and pushing changes to GitHub (only the 'scripts' folder)..."
             script {
                 def gitCommitMessage = "Updated build log after build #${env.BUILD_ID}"
                 
@@ -122,9 +122,9 @@ pipeline {
                     git checkout main
                 """
 
-                // Add, commit, and push the changes
+                // Add, commit, and push only the 'scripts' folder
                 bat """
-                    git add "${env.CSV_FILE}"
+                    git add "${env.WORKSPACE}\\scripts\\*"
                     git commit -m "${gitCommitMessage}"
                     git push origin main
                 """
@@ -132,6 +132,7 @@ pipeline {
         }
     }
 }
+
 
 
 
