@@ -8,8 +8,8 @@ pipeline {
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
         CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to the CSV file where build data is stored
-        GIT_USER = 'vamsimohanyacham'  // Replace with your GitHub username
-        GIT_EMAIL = 'vamsimohanyacham@gmail.com'  // Replace with your email address
+        GIT_REPO_URL = 'https://github.com/vamsimohanyacham/test.git'  // Change this to your repository URL
+        GIT_BRANCH = 'main'  // Specify the target branch for commit
     }
 
     stages {
@@ -30,7 +30,6 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-
                 script {
                     def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
                     if (!fileExists(buildLogsDir)) {
@@ -62,10 +61,10 @@ pipeline {
                     echo "Prediction result file: ${predictionFile}"
 
                     // Ensure Python is available
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
+                    bat "\"${env.PYTHON_PATH}python.exe\" --version"  // Check Python version
 
                     // Run error prediction
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
+                    bat "\"${env.PYTHON_PATH}python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
@@ -105,32 +104,30 @@ pipeline {
                 bat appendCsvCommand
             }
 
-            // Commit and push only the 'scripts' folder to GitHub (directly to 'main' branch)
+            // Commit and push only the 'scripts' folder to the GitHub repository
             echo "Committing and pushing changes to GitHub (only the 'scripts' folder)..."
             script {
-                def gitCommitMessage = "Updated build log after build #${env.BUILD_ID}"
-                
-                // Configure Git
-                bat """
-                    git config user.name "${env.GIT_USER}"
-                    git config user.email "${env.GIT_EMAIL}"
-                """
+                // Configure git user for Jenkins
+                bat "git config --global user.name 'vamsimohanyacham'"
+                bat "git config --global user.email 'vamsimohanyacham@gmail.com'"
 
-                // Add the changes only in 'scripts' folder
-                bat """
-                    git add "${env.WORKSPACE}\\scripts\\*"
-                    git commit -m "${gitCommitMessage}"
-                """
+                // Add changes in the 'scripts' folder
+                bat "git add \"${env.WORKSPACE}\\scripts\\*\""
+                bat "git commit -m \"Updated build log after build #${env.BUILD_ID}\""
 
-                // Push directly to the 'main' branch without switching branches
-                bat """
-                    git fetch origin
-                    git push origin main
-                """
+                // Fetch latest changes from GitHub
+                bat "git fetch origin"
+
+                // Checkout the correct branch (main)
+                bat "git checkout ${env.GIT_BRANCH}"
+
+                // Push the changes to the 'main' branch on GitHub
+                bat "git push origin ${env.GIT_BRANCH}"
             }
         }
     }
 }
+
 
 
 
