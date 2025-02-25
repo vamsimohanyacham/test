@@ -61,8 +61,8 @@ pipeline {
                     // Ensure Python is available
                     bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" --version'  // Check Python version
 
-                    // Run the Python script to predict errors
-                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" predict_errors.py --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
+                    // Update path to predict_errors.py if it's in a subfolder, e.g., 'scripts'
+                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" scripts\\predict_errors.py --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
@@ -82,6 +82,7 @@ pipeline {
         }
     }
 }
+
 
 
 
