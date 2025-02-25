@@ -129,7 +129,6 @@
 
 
 
-
 pipeline {
     agent any
 
@@ -236,10 +235,7 @@ pipeline {
                 """
             }
         }
-    }
 
-    // Stage to commit and push the CSV file to GitHub
-    post {
         success {
             echo "Committing and pushing build_logs.csv to GitHub..."
             script {
@@ -257,8 +253,13 @@ pipeline {
                 bat 'git push origin main'
             }
         }
+
+        failure {
+            echo "Build failed, check logs for details."
+        }
     }
 }
+
 
 
 
