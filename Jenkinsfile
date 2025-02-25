@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
-        BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
-        DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
-        FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
-        CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to the CSV file where build data is stored
+        BUILD_DIR = 'build_log\\build_logs'
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Full path to Python
+        BUILD_DURATION = '300'
+        DEPENDENCY_CHANGES = '0'
+        FAILED_PREVIOUS_BUILDS = '0'
+        CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'
     }
 
     stages {
@@ -21,14 +21,13 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo 'Installing npm dependencies...'
-                bat 'npm install'  // Install npm dependencies
+                bat 'npm install'
             }
         }
 
         stage('Build') {
             steps {
                 echo 'Building the project...'
-
                 script {
                     def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
                     if (!fileExists(buildLogsDir)) {
@@ -51,11 +50,9 @@ pipeline {
         stage('Run Error Prediction') {
             steps {
                 echo 'Running error prediction...'
-
                 script {
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     def predictionFile = "${env.WORKSPACE}\\${BUILD_DIR}\\prediction_${env.BUILD_ID}.json"
-
                     echo "Log file: ${logFile}"
                     echo "Prediction result file: ${predictionFile}"
 
@@ -71,26 +68,16 @@ pipeline {
             }
         }
 
-        stage('Post Build Actions') {
-            steps {
-                echo 'Build Status: SUCCESS'
-                script {
-                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-                    echo "Log file contents:"
-                    bat "type \"${logFile}\""
-                }
-            }
-        }
-
         stage('Commit and Push Logs') {
             steps {
                 echo 'Committing and pushing logs to GitHub...'
                 script {
-                    // Check if the build logs folder and the CSV file have changes
                     bat "git add ${env.WORKSPACE}\\${BUILD_DIR}\\*"
-                    bat "git add ${env.CSV_FILE}"  // Add the build_logs.csv file
+                    bat "git add ${env.CSV_FILE}"
                     bat 'git commit -m "Update build logs and CSV file" || echo "No changes to commit"'
-                    bat 'git push origin main'  // Replace 'main' with your branch name
+                    
+                    // Ensure the correct branch name is used (use `git branch` to find the branch name)
+                    bat 'git push origin main'
                 }
             }
         }
@@ -98,34 +85,15 @@ pipeline {
 
     post {
         always {
-            // Append build data to the CSV after each build
             echo "Appending build data to CSV file..."
             script {
-                // Prepare the command to append the build data to the CSV file
-                def appendCsvCommand = """
-                    python -c "
-import pandas as pd
-from datetime import datetime
-
-# Assuming the CSV already exists and has the required columns
-data = {
-    'build_duration': [${env.BUILD_DURATION}],
-    'dependency_changes': [${env.DEPENDENCY_CHANGES}],
-    'failed_previous_builds': [${env.FAILED_PREVIOUS_BUILDS}],
-    'error_occurred': [0]  # Assuming no error occurred for this build (modify as needed)
-}
-
-df = pd.DataFrame(data)
-
-# Append the new data to the existing CSV file
-df.to_csv('${env.CSV_FILE}', mode='a', header=False, index=False)
-                    "
-                """
-                bat appendCsvCommand
+                // Append the build data to the CSV using full python path
+                bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" -c \"import pandas as pd; from datetime import datetime; data = {'build_duration': [300], 'dependency_changes': [0], 'failed_previous_builds': [0], 'error_occurred': [0]}; df = pd.DataFrame(data); df.to_csv('${env.CSV_FILE}', mode='a', header=False, index=False)\""
             }
         }
     }
 }
+
 
 
 
