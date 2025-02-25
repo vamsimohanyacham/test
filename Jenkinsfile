@@ -60,10 +60,10 @@ pipeline {
                     echo "Prediction result file: ${predictionFile}"
 
                     // Ensure Python is available
-                    bat "\"${env.PYTHON_PATH}python.exe\" --version"  // Check Python version
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
 
                     // Run error prediction
-                    bat "\"${env.PYTHON_PATH}python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
@@ -88,16 +88,23 @@ pipeline {
             // Append build data to the CSV after each build
             echo "Appending build data to CSV file..."
             script {
-                // Prepare the command to append the build data to the CSV file
+                // Verify if the script exists in the correct directory
                 def appendCsvCommand = """
-                    \"${env.PYTHON_PATH}python.exe\" scripts\\append_to_csv.py ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${env.CSV_FILE}"
+                    echo "Workspace path: ${env.WORKSPACE}"
+                    echo "Checking if append_to_csv.py exists..."
+                    dir "${env.WORKSPACE}\\scripts\\append_to_csv.py"  // Ensure this file exists
+                    if exist "${env.WORKSPACE}\\scripts\\append_to_csv.py" (
+                        echo "Running Python script to append to CSV..."
+                        \"${env.PYTHON_PATH}python.exe\" "${env.WORKSPACE}\\scripts\\append_to_csv.py" ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${env.CSV_FILE}"
+                    ) else (
+                        echo "Error: append_to_csv.py not found!"
+                    )
                 """
                 bat appendCsvCommand
             }
         }
     }
 }
-
 
 
 
