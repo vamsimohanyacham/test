@@ -76,8 +76,8 @@ pipeline {
                     // Commit and push the log file to GitHub
                     bat """
                         cd repo
-                        git config --global user.email "youremail@example.com"
-                        git config --global user.name "yourusername"
+                        git config --global user.email "vamsimohanyacham@gmail.com"
+                        git config --global user.name "vamsimohanyacham"
                         git add build_log\\build_logs\\build_${env.BUILD_ID}.log
                         git commit -m "Add build log ${env.BUILD_ID}"
                         git push origin ${GITHUB_BRANCH}
