@@ -1,22 +1,23 @@
+import csv
 import sys
-import pandas as pd
 
-# Get arguments passed from Jenkins pipeline
-build_duration = int(sys.argv[1])
-dependency_changes = int(sys.argv[2])
-failed_previous_builds = int(sys.argv[3])
-csv_file = sys.argv[4]
+def append_to_csv(build_duration, dependency_changes, failed_previous_builds, csv_file):
+    try:
+        # Check if the file exists and open it in append mode
+        with open(csv_file, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            # Write data to CSV
+            writer.writerow([build_duration, dependency_changes, failed_previous_builds])
+            print(f"Successfully appended to {csv_file}")
+    except Exception as e:
+        print(f"Error while appending to CSV: {e}")
 
-# Data to append to the CSV
-data = {
-    'build_duration': [build_duration],
-    'dependency_changes': [dependency_changes],
-    'failed_previous_builds': [failed_previous_builds],
-    'error_occurred': [0]  # Assuming no error occurred for this build (modify as needed)
-}
+if __name__ == '__main__':
+    # Collect arguments passed to the script
+    build_duration = sys.argv[1]
+    dependency_changes = sys.argv[2]
+    failed_previous_builds = sys.argv[3]
+    csv_file = sys.argv[4]
 
-# Create a DataFrame from the data
-df = pd.DataFrame(data)
-
-# Append to the existing CSV file (without the header, to avoid duplication)
-df.to_csv(csv_file, mode='a', header=False, index=False)
+    # Call function to append to CSV
+    append_to_csv(build_duration, dependency_changes, failed_previous_builds, csv_file)
