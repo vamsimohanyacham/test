@@ -2,21 +2,19 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
-        BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
-        DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
-        FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
-        CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to the CSV file where build data is stored
-        GIT_REPO_URL = 'https://github.com/vamsimohanyacham/test.git'  // Change this to your repository URL
-        GIT_BRANCH = 'main'  // Specify the target branch for commit
+        BUILD_DIR = 'build_log\\build_logs'  // Build logs directory
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Python installation path
+        CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to CSV file
+        BUILD_DURATION = '300'  // Build duration (in seconds)
+        DEPENDENCY_CHANGES = '0'  // Number of dependency changes
+        FAILED_PREVIOUS_BUILDS = '0'  // Number of failed previous builds
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                echo 'Checkout SCM'
-                checkout scm
+                echo 'Checking out SCM...'
+                checkout scm  // Checkout code from SCM (GitHub)
             }
         }
 
@@ -27,20 +25,21 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Project') {
             steps {
                 echo 'Building the project...'
+                
                 script {
                     def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
+                    // Create directory if it doesn't exist
                     if (!fileExists(buildLogsDir)) {
                         echo "Creating directory: ${buildLogsDir}"
                         bat "mkdir \"${buildLogsDir}\""
                     }
-                }
 
-                script {
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
+
                     echo "Starting build at: ${currentDate}"
                     bat "echo 'Starting build at: ${currentDate}' > \"${logFile}\""
                     bat "npm run build >> \"${logFile}\" 2>&1"
@@ -60,13 +59,13 @@ pipeline {
                     echo "Log file: ${logFile}"
                     echo "Prediction result file: ${predictionFile}"
 
-                    // Ensure Python is available
-                    bat "\"${env.PYTHON_PATH}python.exe\" --version"  // Check Python version
+                    // Check if Python is available
+                    bat "\"${env.PYTHON_PATH}python.exe\" --version"
 
-                    // Run error prediction
+                    // Run the error prediction Python script
                     bat "\"${env.PYTHON_PATH}python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
 
-                    // Display the contents of the prediction file
+                    // Display prediction file contents
                     bat "type \"${predictionFile}\""
                 }
             }
@@ -74,11 +73,27 @@ pipeline {
 
         stage('Post Build Actions') {
             steps {
-                echo 'Build Status: SUCCESS'
+                echo 'Executing post-build actions...'
+
                 script {
+                    // Log file
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     echo "Log file contents:"
                     bat "type \"${logFile}\""
+
+                    // Commit the build logs to GitHub
+                    echo "Committing and pushing changes to GitHub (only the 'scripts' folder)..."
+
+                    bat '''
+                        git config user.name "your-git-username"
+                        git config user.email "your-email@example.com"
+                        
+                        // Check if the "scripts" folder is modified and commit only it
+                        git add scripts/*
+                        git commit -m "Updated build log after build #${BUILD_ID}"
+                        git fetch origin
+                        git push origin main
+                    '''
                 }
             }
         }
@@ -86,48 +101,21 @@ pipeline {
 
     post {
         always {
-            // Append build data to the CSV after each build
+            // This will ensure the build logs are appended to CSV after every build
             echo "Appending build data to CSV file..."
             script {
                 // Verify if the script exists in the correct directory
                 def appendCsvCommand = """
                     echo "Workspace path: ${env.WORKSPACE}"
                     echo "Checking if append_to_csv.py exists..."
-                    dir "${env.WORKSPACE}\\scripts\\append_to_csv.py"  // Use correct syntax for Windows path
+                    dir "${env.WORKSPACE}\\scripts\\append_to_csv.py"
                     if exist "${env.WORKSPACE}\\scripts\\append_to_csv.py" (
                         echo "Running Python script to append to CSV..."
                         \"${env.PYTHON_PATH}python.exe\" "${env.WORKSPACE}\\scripts\\append_to_csv.py" ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${env.CSV_FILE}"
                     ) else (
                         echo "Error: append_to_csv.py not found!"
                     )
-                """
-                bat appendCsvCommand
-            }
-
-            // Commit and push only the 'scripts' folder to the GitHub repository
-            echo "Committing and pushing changes to GitHub (only the 'scripts' folder)..."
-            script {
-                // Configure git user for Jenkins
-                bat "git config --global user.name 'vamsimohanyacham'"
-                bat "git config --global user.email 'vamsimohanyacham@gmail.com'"
-
-                // Add changes in the 'scripts' folder
-                bat "git add \"${env.WORKSPACE}\\scripts\\*\""
-                bat "git commit -m \"Updated build log after build #${env.BUILD_ID}\""
-
-                // Fetch latest changes from GitHub
-                bat "git fetch origin"
-
-                // Checkout the correct branch (main)
-                bat "git checkout ${env.GIT_BRANCH}"
-
-                // Push the changes to the 'main' branch on GitHub
-                bat "git push origin ${env.GIT_BRANCH}"
-            }
-        }
-    }
-}
-
+             
 
 
 
