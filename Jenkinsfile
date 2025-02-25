@@ -128,6 +128,7 @@
 // }
 
 
+
 pipeline {
     agent any
 
@@ -137,7 +138,6 @@ pipeline {
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
-        CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to the CSV file where build data is stored
     }
 
     stages {
@@ -192,7 +192,7 @@ pipeline {
                     // Ensure Python is available
                     bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
 
-                    // Run error prediction
+                    // Run error prediction without --log_file argument
                     bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
 
                     // Display the contents of the prediction file
@@ -212,146 +212,7 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            // Append build data to the CSV after each build
-            echo "Appending build data to CSV file..."
-            script {
-                def pythonPath = "C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe"
-                def appendCsvScript = "${env.WORKSPACE}\\scripts\\append_to_csv.py"
-                def csvFilePath = "${env.WORKSPACE}\\scripts\\build_logs.csv"
-
-                // Gather your data (for example, from environment variables or build parameters)
-                def buildDuration = env.BUILD_DURATION // Placeholder, replace with real data
-                def dependencyChanges = env.DEPENDENCY_CHANGES // Placeholder
-                def failedPreviousBuilds = env.FAILED_PREVIOUS_BUILDS // Placeholder
-                def errorOccurred = "0" // Placeholder, replace with real error flag if needed
-
-                // Check if the append_to_csv.py exists and run it
-                bat """
-                    echo Checking if append_to_csv.py exists...
-                    if exist "${appendCsvScript}" (
-                        echo Running Python script to append to CSV...
-                        "${pythonPath}" "${appendCsvScript}" ${buildDuration} ${dependencyChanges} ${failedPreviousBuilds} ${errorOccurred} "${csvFilePath}"
-                    ) else (
-                        echo Error: append_to_csv.py not found!
-                    )
-                """
-            }
-        }
-
-        success {
-            echo "Committing and pushing build_logs.csv to GitHub..."
-            script {
-                // Git configuration for commit
-                bat 'git config user.name "vamsimohanyacham"'
-                bat 'git config user.email "vamsimohanyacham@gmail.com"'
-
-                // Add only the build_logs.csv file to git staging
-                bat 'git add "C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv"'
-
-                // Commit the changes with the build number
-                bat 'git commit -m "Updated build log after build #${BUILD_ID}" || echo "No changes to commit"'
-
-                // Push the changes to the main branch
-            }
-        }
-
-        failure {
-            echo "Build failed, check logs for details."
-        }
-    }
 }
-
-
-
-
-
-// pipeline {
-//     agent any
-
-//     environment {
-//         BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
-//         PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
-//         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
-//         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
-//         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
-//     }
-
-//     stages {
-//         stage('Checkout SCM') {
-//             steps {
-//                 echo 'Checkout SCM'
-//                 checkout scm
-//             }
-//         }
-
-//         stage('Install Dependencies') {
-//             steps {
-//                 echo 'Installing npm dependencies...'
-//                 bat 'npm install'  // Install npm dependencies
-//             }
-//         }
-
-//         stage('Build') {
-//             steps {
-//                 echo 'Building the project...'
-
-//                 script {
-//                     def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
-//                     if (!fileExists(buildLogsDir)) {
-//                         echo "Creating directory: ${buildLogsDir}"
-//                         bat "mkdir \"${buildLogsDir}\""
-//                     }
-//                 }
-
-//                 script {
-//                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-//                     def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
-//                     echo "Starting build at: ${currentDate}"
-//                     bat "echo 'Starting build at: ${currentDate}' > \"${logFile}\""
-//                     bat "npm run build >> \"${logFile}\" 2>&1"
-//                     echo "Build log written to: ${logFile}"
-//                 }
-//             }
-//         }
-
-//         stage('Run Error Prediction') {
-//             steps {
-//                 echo 'Running error prediction...'
-
-//                 script {
-//                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-//                     def predictionFile = "${env.WORKSPACE}\\${BUILD_DIR}\\prediction_${env.BUILD_ID}.json"
-
-//                     echo "Log file: ${logFile}"
-//                     echo "Prediction result file: ${predictionFile}"
-
-//                     // Ensure Python is available
-//                     bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
-
-//                     // Run error prediction without --log_file argument
-//                     bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
-
-//                     // Display the contents of the prediction file
-//                     bat "type \"${predictionFile}\""
-//                 }
-//             }
-//         }
-
-//         stage('Post Build Actions') {
-//             steps {
-//                 echo 'Build Status: SUCCESS'
-//                 script {
-//                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-//                     echo "Log file contents:"
-//                     bat "type \"${logFile}\""
-//                 }
-//             }
-//         }
-//     }
-// }
 
 
 
