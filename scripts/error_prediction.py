@@ -50,6 +50,7 @@ from sklearn.metrics import classification_report, accuracy_score
 import joblib
 import argparse
 import json
+import os
 
 # Step 1: Load the dataset (CSV file with build logs)
 def load_data(file_path):
@@ -84,6 +85,19 @@ def predict_error(model, scaler, build_data):
     prediction = model.predict(scaled_data)
     return prediction[0]
 
+# Step 6: Save prediction result to the file
+def save_prediction(prediction_result, prediction_file_path):
+    try:
+        # Make sure the directory exists
+        os.makedirs(os.path.dirname(prediction_file_path), exist_ok=True)
+        
+        # Save the prediction result to the file
+        with open(prediction_file_path, 'w') as f:
+            json.dump(prediction_result, f, indent=4)
+        print(f"Prediction saved to {prediction_file_path}")
+    except Exception as e:
+        print(f"Error saving prediction: {e}")
+
 def main():
     parser = argparse.ArgumentParser(description="Error prediction for Jenkins build logs")
     parser.add_argument('--build_duration', type=int, required=True, help='Build duration in minutes')
@@ -105,5 +119,35 @@ def main():
 
     # Step 4: Feature scaling
     scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)  # Fit and transform the training data
+    X_test_scaled = scaler.transform(X_test)  # Transform the test data
+
+    # Step 5: Train the model
+    model = train_model(X_train_scaled, y_train)
+
+    # Step 6: Evaluate the model
+    evaluate_model(model, X_test_scaled, y_test)
+
+    # Step 7: Save the model and scaler
+    save_model(model, scaler, 'build_error_predictor.pkl', 'scaler.pkl')
+
+    # Step 8: Make a prediction for the new build
+    build_data = [args.build_duration, args.dependency_changes, args.failed_previous_builds]
+    prediction = predict_error(model, scaler, build_data)
+
+    # Prepare the prediction result
+    prediction_result = {
+        "build_duration": args.build_duration,
+        "dependency_changes": args.dependency_changes,
+        "failed_previous_builds": args.failed_previous_builds,
+        "prediction": "Failure" if prediction == 1 else "Success"
+    }
+
+    # Step 9: Save the prediction result to the specified file
+    save_prediction(prediction_result, args.prediction_file)
+
+if __name__ == "__main__":
+    main()
+
 
 
