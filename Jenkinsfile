@@ -1,10 +1,9 @@
 pipeline {
     agent any
-    
+
     environment {
         BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows paths
-        GITHUB_REPO_URL = 'https://github.com/vamsimohanyacham/test.git'
-        GITHUB_BRANCH = 'main'  // Specify the branch you want to push logs to
+        PREDICTION_FILE = "${env.WORKSPACE}\\build_log\\prediction_result.json" // Path to save the prediction result
     }
 
     stages {
@@ -34,18 +33,36 @@ pipeline {
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     echo "Path to log file: ${logFile}"
 
-                    // Ensure the directory exists
-                    bat "if exist ${BUILD_DIR} echo Directory exists! || echo Directory creation failed."
-
                     // Get the current date/time (using Groovy to capture date)
                     def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
                     echo "Current date: ${currentDate}"
 
-                    // Write an initial entry into the log file
+                    // Write an initial entry into the log file to confirm writing
                     bat "echo 'Starting build at: ${currentDate}' > ${logFile}"
 
                     // Run the build command and append the output to the log file
                     bat "npm run build >> ${logFile} 2>&1"
+
+                    // Confirm the log file is written
+                    bat "echo Log file written at: ${logFile}"
+                }
+            }
+        }
+
+        stage('Run Error Prediction') {
+            steps {
+                echo 'Running error prediction based on build metadata...'
+
+                script {
+                    // Get build metadata (replace these with actual values from your build)
+                    def buildDuration = 150  // Example: build duration in minutes
+                    def dependencyChanges = 7  // Example: number of dependencies changed
+                    def failedPreviousBuilds = 3  // Example: number of failed builds
+
+                    // Run the error prediction script
+                    bat """
+                        python predict_error.py --build_duration ${buildDuration} --dependency_changes ${dependencyChanges} --failed_previous_builds ${failedPreviousBuilds} --prediction_file ${PREDICTION_FILE}
+                    """
                 }
             }
         }
@@ -54,34 +71,18 @@ pipeline {
             steps {
                 echo 'Build Status: SUCCESS'
 
-                // Print the log contents for debugging purposes
-                bat "type ${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-
-                // Push the log file to GitHub
                 script {
-                    def logFilePath = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
+                    // Read and print the prediction result
+                    def predictionResult = readJSON file: PREDICTION_FILE
+                    echo "Prediction result: ${predictionResult.status} - ${predictionResult.message}"
 
-                    // Clone the repository (if not already cloned)
-                    bat """
-                        git clone ${GITHUB_REPO_URL} repo
-                        cd repo
-                    """
-
-                    // Create the necessary folder if it doesn't exist
-                    bat "mkdir build_log\\build_logs"
-
-                    // Copy the log file to the GitHub repository folder
-                    bat "copy ${logFilePath} repo\\build_log\\build_logs\\build_${env.BUILD_ID}.log"
-
-                    // Commit and push the log file to GitHub
-                    bat """
-                        cd repo
-                        git config --global user.email "vamsimohanyacham@gmail.com"
-                        git config --global user.name "vamsimohanyacham"
-                        git add build_log\\build_logs\\build_${env.BUILD_ID}.log
-                        git commit -m "Add build log ${env.BUILD_ID}"
-                        git push origin ${GITHUB_BRANCH}
-                    """
+                    // Handle failure cases based on prediction
+                    if (predictionResult.status == 'fail') {
+                        echo "Warning: ${predictionResult.message}"
+                        currentBuild.result = 'UNSTABLE'  // Mark the build as unstable if prediction indicates failure
+                    } else {
+                        echo "Build seems stable."
+                    }
                 }
             }
         }
