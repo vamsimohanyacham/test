@@ -128,7 +128,6 @@
 // }
 
 
-
 pipeline {
     agent any
 
@@ -223,12 +222,18 @@ pipeline {
                 def appendCsvScript = "${env.WORKSPACE}\\scripts\\append_to_csv.py"
                 def csvFilePath = "${env.WORKSPACE}\\scripts\\build_logs.csv"
 
+                // Gather your data (for example, from environment variables or build parameters)
+                def buildDuration = env.BUILD_DURATION // Placeholder, replace with real data
+                def dependencyChanges = env.DEPENDENCY_CHANGES // Placeholder
+                def failedPreviousBuilds = env.FAILED_PREVIOUS_BUILDS // Placeholder
+                def errorOccurred = "0" // Placeholder, replace with real error flag if needed
+
                 // Check if the append_to_csv.py exists and run it
                 bat """
                     echo Checking if append_to_csv.py exists...
                     if exist "${appendCsvScript}" (
                         echo Running Python script to append to CSV...
-                        "${pythonPath}" "${appendCsvScript}" ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${csvFilePath}"
+                        "${pythonPath}" "${appendCsvScript}" ${buildDuration} ${dependencyChanges} ${failedPreviousBuilds} ${errorOccurred} "${csvFilePath}"
                     ) else (
                         echo Error: append_to_csv.py not found!
                     )
@@ -259,9 +264,6 @@ pipeline {
         }
     }
 }
-
-
-
 
 
 
