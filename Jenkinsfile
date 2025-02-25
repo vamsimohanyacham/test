@@ -61,8 +61,8 @@ pipeline {
                     // Ensure Python is available
                     bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" --version'  // Check Python version
 
-                    // Pass the required arguments
-                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" scripts\\error_prediction.py --build_duration \"${BUILD_DURATION}\" --dependency_changes \"${DEPENDENCY_CHANGES}\" --failed_previous_builds \"${FAILED_PREVIOUS_BUILDS}\" --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
+                    // Use Groovy's string interpolation to pass environment variables
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --log_file \"${logFile}\" --prediction_file \"${predictionFile}\""
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
