@@ -110,22 +110,23 @@ pipeline {
                     git config user.name "vamsimohanyacham"
                     git config user.email "vamsimohanyacham@gmail.com"
                     
-                    // Check if the build_logs.csv file has been modified
+                    REM Check if the build_logs.csv file has been modified 
                     git add scripts\\build_logs.csv
 
-                    // Commit changes if there are any
+                    REM Commit changes if there are any
                     git commit -m "Updated build log after build #${BUILD_ID}" || echo "No changes to commit"
 
-                    // Fetch the latest changes from GitHub to avoid conflicts
+                    REM Fetch the latest changes from GitHub to avoid conflicts
                     git fetch origin
                     
-                    // Push the changes to the main branch
+                    REM Push the changes to the main branch
                     git push origin main
                 '''
             }
         }
     }
 }
+
 
 
 
