@@ -4,6 +4,9 @@ pipeline {
     environment {
         BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
         PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
+        BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
+        DEPENDENCY_CHANGES = 'false'  // Placeholder for dependency changes
+        FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
     }
 
     stages {
@@ -18,9 +21,6 @@ pipeline {
             steps {
                 echo 'Installing npm dependencies...'
                 bat 'npm install'  // Install npm dependencies
-                
-                // Skipping Python dependencies since they are manually installed
-                echo 'Skipping Python dependencies...'
             }
         }
 
@@ -61,8 +61,8 @@ pipeline {
                     // Ensure Python is available
                     bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" --version'  // Check Python version
 
-                    // Update the path to the correct script location
-                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" scripts\\error_prediction.py --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
+                    // Pass the required arguments
+                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" scripts\\error_prediction.py --build_duration \"${BUILD_DURATION}\" --dependency_changes \"${DEPENDENCY_CHANGES}\" --failed_previous_builds \"${FAILED_PREVIOUS_BUILDS}\" --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
@@ -82,6 +82,7 @@ pipeline {
         }
     }
 }
+
 
 
 
