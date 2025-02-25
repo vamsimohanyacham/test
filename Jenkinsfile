@@ -13,8 +13,8 @@ pipeline {
                 echo "Committing and pushing logs to GitHub..."
 
                 // Set up Git user to avoid "unknown" committer issue
-                bat 'git config --global user.name "Your Name"'
-                bat 'git config --global user.email "youremail@example.com"'
+                bat 'git config --global user.name "vamsimohanyacham"'
+                bat 'git config --global user.email "vamsimohanyacham@gmail.com"'
 
                 // Add and commit logs
                 bat 'git add build_log/build_logs/*'
