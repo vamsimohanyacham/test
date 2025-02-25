@@ -18,10 +18,9 @@ pipeline {
             steps {
                 echo 'Installing npm dependencies...'
                 bat 'npm install'  // Install npm dependencies
-
-                echo 'Installing Python dependencies...'
-                // Use full path to python and pip directly
-                bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" -m pip install -r requirements.txt'
+                
+                // Skipping Python dependencies since they are manually installed
+                echo 'Skipping Python dependencies...'
             }
         }
 
@@ -83,6 +82,7 @@ pipeline {
         }
     }
 }
+
 
 
 
