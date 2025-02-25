@@ -115,7 +115,12 @@ pipeline {
                     ) else (
                         echo "Error: append_to_csv.py not found!"
                     )
-             
+                """
+                bat appendCsvCommand
+            }
+        }
+    }
+}
 
 
 
