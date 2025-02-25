@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows paths
+        BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
     }
 
     stages {
