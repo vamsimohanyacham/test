@@ -90,29 +90,14 @@ pipeline {
             script {
                 // Prepare the command to append the build data to the CSV file
                 def appendCsvCommand = """
-                    python -c "
-import pandas as pd
-from datetime import datetime
-
-# Assuming the CSV already exists and has the required columns
-data = {
-    'build_duration': [${env.BUILD_DURATION}],
-    'dependency_changes': [${env.DEPENDENCY_CHANGES}],
-    'failed_previous_builds': [${env.FAILED_PREVIOUS_BUILDS}],
-    'error_occurred': [0]  # Assuming no error occurred for this build (modify as needed)
-}
-
-df = pd.DataFrame(data)
-
-# Append the new data to the existing CSV file
-df.to_csv('${env.CSV_FILE}', mode='a', header=False, index=False)
-                    "
+                    \"${env.PYTHON_PATH}python.exe\" scripts\\append_to_csv.py ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${env.CSV_FILE}"
                 """
                 bat appendCsvCommand
             }
         }
     }
 }
+
 
 
 
