@@ -16,10 +16,18 @@ pipeline {
                 bat 'git config --global user.name "vamsimohanyacham"'
                 bat 'git config --global user.email "vamsimohanyacham@gmail.com"'
 
-                // Add and commit logs
-                bat 'git add build_log/build_logs/*'
-                bat 'git add scripts/build_logs.csv'
-                bat 'git commit -m "Update build logs and CSV file" || echo "No changes to commit"'
+                // Check if build log directory contains files
+                script {
+                    def logFilesExist = fileExists('build_log/build_logs/') && (sh(script: "ls build_log/build_logs/", returnStdout: true).trim() != '')
+                    if (logFilesExist) {
+                        // Add and commit logs if files exist
+                        bat 'git add build_log/build_logs/*'
+                        bat 'git add scripts/build_logs.csv'
+                        bat 'git commit -m "Update build logs and CSV file" || echo "No changes to commit"'
+                    } else {
+                        echo "No build log files found to commit."
+                    }
+                }
 
                 // Make sure we are on the main branch before pushing
                 bat 'git checkout main || git checkout -b main'  // Create branch if not exists
@@ -49,7 +57,6 @@ pipeline {
         }
     }
 }
-
 
 
 
