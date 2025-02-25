@@ -120,7 +120,7 @@ pipeline {
                 bat """
                     git add "${env.CSV_FILE}"
                     git commit -m "${gitCommitMessage}"
-                    git push origin HEAD:main  // Make sure 'main' is your target branch
+                    git push origin main
                 """
             }
         }
