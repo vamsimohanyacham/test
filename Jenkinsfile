@@ -111,7 +111,7 @@ pipeline {
                     git config user.email "vamsimohanyacham@gmail.com"
                     
                     REM Check if the build_logs.csv file has been modified 
-                    git add scripts\\build_logs.csv
+                    git add "C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv"
 
                     REM Commit changes if there are any
                     git commit -m "Updated build log after build #${BUILD_ID}" || echo "No changes to commit"
