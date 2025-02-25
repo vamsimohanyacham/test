@@ -116,6 +116,12 @@ pipeline {
                     git config user.email "${env.GIT_EMAIL}"
                 """
 
+                // Ensure the main branch exists and check it out
+                bat """
+                    git fetch origin
+                    git checkout main
+                """
+
                 // Add, commit, and push the changes
                 bat """
                     git add "${env.CSV_FILE}"
@@ -126,6 +132,7 @@ pipeline {
         }
     }
 }
+
 
 
 
