@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\Scripts\\'  // Actual Python Scripts path
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Adjust to Python install directory (not Scripts)
     }
 
     stages {
@@ -20,7 +20,7 @@ pipeline {
                 bat 'npm install'  // Install npm dependencies
 
                 echo 'Installing Python dependencies...'
-                bat '"${PYTHON_PATH}pip" install -r requirements.txt'  // Use full path to pip to ensure it's found
+                bat '"${PYTHON_PATH}python" -m pip install -r requirements.txt'  // Use python -m pip
             }
         }
 
@@ -82,6 +82,7 @@ pipeline {
         }
     }
 }
+
 
 
 
