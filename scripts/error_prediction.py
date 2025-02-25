@@ -1,23 +1,21 @@
 import argparse
 import json
 
-# Example prediction function without logs, using build metadata
 def predict_error(build_duration, dependency_changes, failed_previous_builds):
     errors = []
 
-    # Predict failure based on build duration (arbitrary threshold)
-    if build_duration > 120:  # if build takes more than 2 hours, flag it
+    # Predict failure based on build duration
+    if build_duration > 120:
         errors.append('Warning: Build duration is unusually long.')
 
-    # Predict failure based on the number of dependencies changed (arbitrary threshold)
-    if dependency_changes > 5:  # if more than 5 dependencies have changed
+    # Predict failure based on the number of dependencies changed
+    if dependency_changes > 5:
         errors.append('Warning: A large number of dependencies have been modified.')
 
     # Predict failure based on previous build failures
-    if failed_previous_builds > 2:  # if more than 2 previous builds failed
+    if failed_previous_builds > 2:
         errors.append('Warning: Multiple recent build failures detected.')
 
-    # If errors are detected, return failure status
     if errors:
         return {"status": "fail", "message": "Potential issues detected in the build.", "details": errors}
     else:
