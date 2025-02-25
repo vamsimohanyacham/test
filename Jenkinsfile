@@ -103,8 +103,8 @@ pipeline {
                 bat appendCsvCommand
             }
 
-            // Git commit and push the updated build_logs.csv
-            echo "Committing and pushing build_logs.csv to GitHub..."
+            // Git commit and push only the 'scripts' directory and 'build_logs.csv' file to GitHub
+            echo "Committing and pushing build_logs.csv to GitHub (only 'scripts' folder)..."
             script {
                 bat '''
                     git config user.name "vamsimohanyacham"
@@ -119,13 +119,14 @@ pipeline {
                     REM Fetch the latest changes from GitHub to avoid conflicts
                     git fetch origin
                     
-                    REM Push the changes to the main branch
+                    REM Push only the 'scripts' directory and build_logs.csv to the main branch
                     git push origin main
                 '''
             }
         }
     }
 }
+
 
 
 
