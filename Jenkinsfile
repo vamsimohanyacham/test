@@ -220,23 +220,46 @@ pipeline {
             // Append build data to the CSV after each build
             echo "Appending build data to CSV file..."
             script {
-                // Verify if the script exists in the correct directory
-                def appendCsvCommand = """
-                    echo "Workspace path: ${env.WORKSPACE}"
-                    echo "Checking if append_to_csv.py exists..."
-                    dir "${env.WORKSPACE}\\scripts\\append_to_csv.py"  // Use correct syntax for Windows path
-                    if exist "${env.WORKSPACE}\\scripts\\append_to_csv.py" (
-                        echo "Running Python script to append to CSV..."
-                        \"${env.PYTHON_PATH}python.exe\" "${env.WORKSPACE}\\scripts\\append_to_csv.py" ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${env.CSV_FILE}"
+                def pythonPath = "C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe"
+                def appendCsvScript = "${env.WORKSPACE}\\scripts\\append_to_csv.py"
+                def csvFilePath = "${env.WORKSPACE}\\scripts\\build_logs.csv"
+
+                // Check if the append_to_csv.py exists and run it
+                bat """
+                    echo Checking if append_to_csv.py exists...
+                    if exist "${appendCsvScript}" (
+                        echo Running Python script to append to CSV...
+                        "${pythonPath}" "${appendCsvScript}" ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${csvFilePath}"
                     ) else (
-                        echo "Error: append_to_csv.py not found!"
+                        echo Error: append_to_csv.py not found!
                     )
                 """
-                bat appendCsvCommand
+            }
+        }
+    }
+
+    // Stage to commit and push the CSV file to GitHub
+    post {
+        success {
+            echo "Committing and pushing build_logs.csv to GitHub..."
+            script {
+                // Git configuration for commit
+                bat 'git config user.name "vamsimohanyacham"'
+                bat 'git config user.email "vamsimohanyacham@gmail.com"'
+
+                // Add only the build_logs.csv file to git staging
+                bat 'git add "C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv"'
+
+                // Commit the changes with the build number
+                bat 'git commit -m "Updated build log after build #${BUILD_ID}" || echo "No changes to commit"'
+
+                // Push the changes to the main branch
+                bat 'git push origin main'
             }
         }
     }
 }
+
 
 
 
