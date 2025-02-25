@@ -5,7 +5,7 @@ pipeline {
         BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
         PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
-        DEPENDENCY_CHANGES = 'false'  // Placeholder for dependency changes
+        DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
     }
 
@@ -59,7 +59,7 @@ pipeline {
                     echo "Prediction result file: ${predictionFile}"
 
                     // Ensure Python is available
-                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" --version'  // Check Python version
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
 
                     // Use Groovy's string interpolation to pass environment variables
                     bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --log_file \"${logFile}\" --prediction_file \"${predictionFile}\""
@@ -82,6 +82,7 @@ pipeline {
         }
     }
 }
+
 
 
 
