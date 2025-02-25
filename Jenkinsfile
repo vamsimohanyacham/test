@@ -8,8 +8,8 @@ pipeline {
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
         CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'  // Path to the CSV file where build data is stored
-        GIT_USER = 'your-git-username'  // Replace with your GitHub username
-        GIT_EMAIL = 'your-email@example.com'  // Replace with your email address
+        GIT_USER = 'vamsimohanyacham'  // Replace with your GitHub username
+        GIT_EMAIL = 'vamsimohanyacham@gmail.com'  // Replace with your email address
     }
 
     stages {
@@ -105,7 +105,7 @@ pipeline {
                 bat appendCsvCommand
             }
 
-            // Commit and push only the 'scripts' folder to GitHub
+            // Commit and push only the 'scripts' folder to GitHub (directly to 'main' branch)
             echo "Committing and pushing changes to GitHub (only the 'scripts' folder)..."
             script {
                 def gitCommitMessage = "Updated build log after build #${env.BUILD_ID}"
@@ -116,22 +116,22 @@ pipeline {
                     git config user.email "${env.GIT_EMAIL}"
                 """
 
-                // Ensure the main branch exists and check it out
-                bat """
-                    git fetch origin
-                    git checkout main
-                """
-
-                // Add, commit, and push only the 'scripts' folder
+                // Add the changes only in 'scripts' folder
                 bat """
                     git add "${env.WORKSPACE}\\scripts\\*"
                     git commit -m "${gitCommitMessage}"
+                """
+
+                // Push directly to the 'main' branch without switching branches
+                bat """
+                    git fetch origin
                     git push origin main
                 """
             }
         }
     }
 }
+
 
 
 
