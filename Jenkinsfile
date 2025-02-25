@@ -92,7 +92,7 @@ pipeline {
                 def appendCsvCommand = """
                     echo "Workspace path: ${env.WORKSPACE}"
                     echo "Checking if append_to_csv.py exists..."
-                    dir "${env.WORKSPACE}\\scripts\\append_to_csv.py"  // Ensure this file exists
+                    dir "${env.WORKSPACE}\\scripts\\append_to_csv.py"  // Use correct syntax for Windows path
                     if exist "${env.WORKSPACE}\\scripts\\append_to_csv.py" (
                         echo "Running Python script to append to CSV..."
                         \"${env.PYTHON_PATH}python.exe\" "${env.WORKSPACE}\\scripts\\append_to_csv.py" ${env.BUILD_DURATION} ${env.DEPENDENCY_CHANGES} ${env.FAILED_PREVIOUS_BUILDS} "${env.CSV_FILE}"
@@ -105,7 +105,6 @@ pipeline {
         }
     }
 }
-
 
 
 
