@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Adjust to Python install directory (not Scripts)
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
     }
 
     stages {
@@ -20,7 +20,8 @@ pipeline {
                 bat 'npm install'  // Install npm dependencies
 
                 echo 'Installing Python dependencies...'
-                bat '"${PYTHON_PATH}python" -m pip install -r requirements.txt'  // Use python -m pip
+                // Use full path to python and pip directly
+                bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" -m pip install -r requirements.txt'
             }
         }
 
@@ -59,10 +60,10 @@ pipeline {
                     echo "Prediction result file: ${predictionFile}"
 
                     // Ensure Python is available
-                    bat '"${PYTHON_PATH}python" --version'  // Check Python version
+                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" --version'  // Check Python version
 
                     // Run the Python script to predict errors
-                    bat '"${PYTHON_PATH}python" predict_errors.py --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
+                    bat '"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" predict_errors.py --log_file \"${logFile}\" --prediction_file \"${predictionFile}\"'
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
@@ -82,7 +83,6 @@ pipeline {
         }
     }
 }
-
 
 
 
