@@ -255,7 +255,6 @@ pipeline {
                 bat 'git commit -m "Updated build log after build #${BUILD_ID}" || echo "No changes to commit"'
 
                 // Push the changes to the main branch
-                bat 'git push origin main'
             }
         }
 
