@@ -1,98 +1,55 @@
 pipeline {
     agent any
 
-    environment {
-        BUILD_DIR = 'build_log\\build_logs'
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Full path to Python
-        BUILD_DURATION = '300'
-        DEPENDENCY_CHANGES = '0'
-        FAILED_PREVIOUS_BUILDS = '0'
-        CSV_FILE = 'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv'
-    }
-
     stages {
-        stage('Checkout SCM') {
-            steps {
-                echo 'Checkout SCM'
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                echo 'Installing npm dependencies...'
-                bat 'npm install'
-            }
-        }
-
         stage('Build') {
             steps {
-                echo 'Building the project...'
-                script {
-                    def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
-                    if (!fileExists(buildLogsDir)) {
-                        echo "Creating directory: ${buildLogsDir}"
-                        bat "mkdir \"${buildLogsDir}\""
-                    }
-                }
-
-                script {
-                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-                    def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
-                    echo "Starting build at: ${currentDate}"
-                    bat "echo 'Starting build at: ${currentDate}' > \"${logFile}\""
-                    bat "npm run build >> \"${logFile}\" 2>&1"
-                    echo "Build log written to: ${logFile}"
-                }
+                echo "Starting build..."
+                bat 'npm run build'  // Example of your build command
             }
         }
-
-        stage('Run Error Prediction') {
-            steps {
-                echo 'Running error prediction...'
-                script {
-                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-                    def predictionFile = "${env.WORKSPACE}\\${BUILD_DIR}\\prediction_${env.BUILD_ID}.json"
-                    echo "Log file: ${logFile}"
-                    echo "Prediction result file: ${predictionFile}"
-
-                    // Ensure Python is available
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
-
-                    // Run error prediction
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
-
-                    // Display the contents of the prediction file
-                    bat "type \"${predictionFile}\""
-                }
-            }
-        }
-
         stage('Commit and Push Logs') {
             steps {
-                echo 'Committing and pushing logs to GitHub...'
-                script {
-                    bat "git add ${env.WORKSPACE}\\${BUILD_DIR}\\*"
-                    bat "git add ${env.CSV_FILE}"
-                    bat 'git commit -m "Update build logs and CSV file" || echo "No changes to commit"'
-                    
-                    // Ensure the correct branch name is used (use `git branch` to find the branch name)
-                    bat 'git push origin main'
-                }
+                echo "Committing and pushing logs to GitHub..."
+
+                // Set up Git user to avoid "unknown" committer issue
+                bat 'git config --global user.name "Your Name"'
+                bat 'git config --global user.email "youremail@example.com"'
+
+                // Add and commit logs
+                bat 'git add build_log/build_logs/*'
+                bat 'git add scripts/build_logs.csv'
+                bat 'git commit -m "Update build logs and CSV file" || echo "No changes to commit"'
+
+                // Make sure we are on the main branch before pushing
+                bat 'git checkout main || git checkout -b main'  // Create branch if not exists
+                bat 'git push origin main'
+            }
+        }
+        stage('Post Actions') {
+            steps {
+                echo "Appending build data to CSV file..."
+
+                // Run the Python script to append data to the CSV
+                bat """
+                    "C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe" -c "
+                    import pandas as pd
+                    from datetime import datetime
+                    data = {'build_duration': [300], 'dependency_changes': [0], 'failed_previous_builds': [0], 'error_occurred': [0]}
+                    df = pd.DataFrame(data)
+                    df.to_csv(r'C:\\ProgramData\\Jenkins\\.jenkins\\jobs\\test\\workspace\\scripts\\build_logs.csv', mode='a', header=False, index=False)"
+                """
             }
         }
     }
 
     post {
         always {
-            echo "Appending build data to CSV file..."
-            script {
-                // Append the build data to the CSV using full python path
-                bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" -c \"import pandas as pd; from datetime import datetime; data = {'build_duration': [300], 'dependency_changes': [0], 'failed_previous_builds': [0], 'error_occurred': [0]}; df = pd.DataFrame(data); df.to_csv('${env.CSV_FILE}', mode='a', header=False, index=False)\""
-            }
+            echo "Pipeline finished."
         }
     }
 }
+
 
 
 
