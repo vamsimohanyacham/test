@@ -4,6 +4,7 @@ import sys
 def append_to_csv(build_duration, dependency_changes, failed_previous_builds, csv_file):
     try:
         # Check if the file exists and open it in append mode
+        print(f"Attempting to append to {csv_file}...")
         with open(csv_file, mode='a', newline='') as file:
             writer = csv.writer(file)
             # Write data to CSV
