@@ -5,8 +5,19 @@ from sklearn.metrics import accuracy_score
 import pickle
 import os
 
+# Ensure the file 'build_logs.csv' exists in the directory before attempting to read
+if not os.path.exists('build_logs.csv'):
+    print("Error: 'build_logs.csv' file not found!")
+    exit(1)
+
 # Load the historical build data from build_logs.csv
 df = pd.read_csv('build_logs.csv')
+
+# Check if necessary columns exist in the CSV file
+required_columns = ['build_duration', 'dependency_changes', 'failed_previous_builds', 'build_status']
+if not all(col in df.columns for col in required_columns):
+    print(f"Error: Missing required columns in 'build_logs.csv'. Expected columns: {required_columns}")
+    exit(1)
 
 # Preprocess the data: Convert build_status to numeric labels (Success = 0, Fail = 1)
 df['build_status'] = df['build_status'].map({'Success': 0, 'Fail': 1})
@@ -26,6 +37,7 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 
+# Print the model accuracy
 print(f'Model Accuracy: {accuracy * 100:.2f}%')
 
 # Create a directory to save the trained model if it doesn't exist
