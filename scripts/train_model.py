@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-import pickle
+import joblib
 import os
 
 # Load the historical build data from build_logs.csv
@@ -39,9 +39,8 @@ model_dir = 'trained_models'
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
 
-# Save the trained model as build_error_prediction_model.pkl
+# Save the trained model using joblib
 model_path = os.path.join(model_dir, 'build_error_prediction_model.pkl')
-with open(model_path, 'wb') as f:
-    pickle.dump(model, f)
+joblib.dump(model, model_path)
 
 print(f"Model saved at {model_path}")
