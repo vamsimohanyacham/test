@@ -1,9 +1,16 @@
 import argparse
 import pickle
 import json
+import os
 
-# Load the trained model
-with open('build_error_prediction_model.pkl', 'rb') as f:
+# Path to the trained model
+model_path = os.path.join(os.getcwd(), 'trained_models', 'build_error_prediction_model.pkl')
+
+# Ensure the model file exists
+if not os.path.exists(model_path):
+    raise FileNotFoundError(f"Model file not found: {model_path}")
+
+with open(model_path, 'rb') as f:
     model = pickle.load(f)
 
 def make_prediction(build_duration, dependency_changes, failed_previous_builds):
