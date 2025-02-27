@@ -317,8 +317,9 @@ pipeline {
                     bat """
                         ${env.VENV_PATH}\\Scripts\\activate && python ${env.WORKSPACE}\\scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\"
                     """
+                    echo "Prediction file generated: ${predictionFile}"
 
-                    // Display the contents of the prediction file
+                    // Display the contents of the prediction result file
                     bat "type \"${predictionFile}\""
                 }
             }
@@ -335,14 +336,8 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            echo 'Cleaning up...'
-            // Cleanup or any other post-action you might need
-        }
-    }
 }
+
 
 
 
