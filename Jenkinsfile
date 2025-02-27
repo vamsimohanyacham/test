@@ -218,7 +218,7 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Use the correct path for Windows
+        BUILD_DIR = 'build_log\\build_logs'  // Correct path for Windows
         PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
@@ -274,13 +274,14 @@ pipeline {
                     echo "Log file: ${logFile}"
                     echo "Prediction result file: ${predictionFile}"
 
-                    // Ensure Python is available
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
+                    // Ensure Python is available and check version
+                    bat "\"${env.PYTHON_PATH}python.exe\" --version"  // Check Python version
 
-                    // Run error prediction without --log_file argument
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
+                    // Run error prediction and store result in prediction file
+                    bat "\"${env.PYTHON_PATH}python.exe\" scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
 
                     // Display the contents of the prediction file
+                    echo "Prediction result written to: ${predictionFile}"
                     bat "type \"${predictionFile}\""
                 }
             }
@@ -298,6 +299,7 @@ pipeline {
         }
     }
 }
+
 
 
 
