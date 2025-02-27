@@ -1,0 +1,7 @@
+build_duration,dependency_changes,failed_previous_builds,build_status
+250,0,0,Success
+350,1,0,Fail
+200,0,0,Success
+400,1,1,Fail
+300,0,1,Fail
+150,0,0,Success
