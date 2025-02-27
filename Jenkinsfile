@@ -357,9 +357,10 @@ pipeline {
                     bat "type \"${logFile}\""
                 }
             }
-        }
+        }  
     }
 }
+
 
 
 
