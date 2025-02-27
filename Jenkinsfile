@@ -219,11 +219,12 @@ pipeline {
 
     environment {
         BUILD_DIR = 'build_log\\build_logs'  // Use the correct path for Windows
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe'  // Full path to Python executable
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
         VENV_PATH = "${env.WORKSPACE}\\venv" // Virtual Environment path
+        LOG_FILE_PATH = "${env.WORKSPACE}\\build_logs.csv"  // Path to CSV log file
     }
 
     stages {
@@ -243,14 +244,14 @@ pipeline {
                     if (!fileExists("${env.VENV_PATH}\\Scripts\\activate")) {
                         echo 'Creating virtual environment...'
                         bat """
-                            ${env.PYTHON_PATH} -m venv ${env.VENV_PATH}  // Create the virtual environment
+                            python -m venv ${env.VENV_PATH}  // Create the virtual environment
                         """
                     }
 
                     // Step 2: Install necessary dependencies directly
                     echo 'Installing Python dependencies...'
                     bat """
-                        ${env.VENV_PATH}\\Scripts\\activate && ${env.VENV_PATH}\\Scripts\\pip install pandas scikit-learn numpy matplotlib
+                        ${env.VENV_PATH}\\Scripts\\activate && pip install pandas scikit-learn numpy matplotlib
                     """
                 }
             }
@@ -272,6 +273,29 @@ pipeline {
                     } else {
                         echo 'Model already trained. Skipping training.'
                     }
+                }
+            }
+        }
+
+        stage('Generate Logs') {
+            steps {
+                echo 'Generating logs...'
+
+                script {
+                    // Ensure the CSV file exists, create it if not
+                    if (!fileExists("${LOG_FILE_PATH}")) {
+                        echo 'Creating build_logs.csv file...'
+                        bat """
+                            echo Build Duration,Dependency Changes,Failed Previous Builds > "${LOG_FILE_PATH}"
+                        """
+                    }
+
+                    // Add some data to the CSV file (you can adjust this as needed)
+                    echo 'Logging build data...'
+                    def logData = "${BUILD_DURATION}, ${DEPENDENCY_CHANGES}, ${FAILED_PREVIOUS_BUILDS}"
+                    bat """
+                        echo ${logData} >> "${LOG_FILE_PATH}"
+                    """
                 }
             }
         }
@@ -311,7 +335,7 @@ pipeline {
                     echo "Prediction result file: ${predictionFile}"
 
                     // Ensure Python is available
-                    bat "${env.PYTHON_PATH} --version"  // Check Python version
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
 
                     // Run error prediction without --log_file argument
                     bat """
@@ -336,10 +360,6 @@ pipeline {
         }
     }
 }
-
-
-
-
 
 
 
