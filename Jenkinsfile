@@ -218,59 +218,91 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // This will be used to create a new build directory inside Jenkins workspace
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
-        BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
-        DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
-        FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
-        VENV_PATH = "D:\\machinelearning\\venv"  // Virtual Environment path on D: drive
-        LOG_FILE_PATH = "D:\\machinelearning\\build_logs.csv"  // Path to CSV log file on D: drive
-        MODEL_PATH = "D:\\machinelearning\\trained_models\\build_error_prediction_model.pkl"  // Path to model file on D: drive
-        SCRIPT_PATH = "D:\\machinelearning\\scripts"  // Path to scripts on D: drive
+        // Default paths
+        MODEL_PATH = 'D:/machinelearning/trained_models/build_error_prediction_model.pkl'
+        LOG_FILE_PATH = 'D:/machinelearning/build_log/build_logs.csv'
+        SCRIPT_PATH = 'D:/machinelearning/scripts'
+        
+        // Default to empty initially, will be populated dynamically
+        BUILD_DURATION = 0
+        DEPENDENCY_CHANGES = 0
+        FAILED_PREVIOUS_BUILDS = 0
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                echo 'Checkout SCM'
-                checkout scm
+                checkout scm  // Checkout the code from the repository
             }
         }
 
-        stage('Set up Python Environment') {
+        stage('Set Build Duration') {
             steps {
-                echo 'Setting up Python virtual environment and installing dependencies...'
-
                 script {
-                    // Step 1: Check if virtual environment exists
-                    if (!fileExists("${env.VENV_PATH}\\Scripts\\activate")) {
-                        echo 'Creating virtual environment...'
-                        bat """
-                            python -m venv ${env.VENV_PATH}  // Create the virtual environment on D: drive
-                        """
+                    // Calculate build duration by using current time and previous build time
+                    def startTime = currentBuild.getTimeInMillis()
+                    echo "Start time of build: ${startTime}"
+
+                    // After build completion, calculate the duration
+                    currentBuild.getDurationString()
+                    def endTime = currentBuild.getTimeInMillis()
+                    env.BUILD_DURATION = (endTime - startTime) / 1000  // In seconds
+                    echo "Build duration is: ${env.BUILD_DURATION} seconds"
+                }
+            }
+        }
+
+        stage('Track Dependency Changes') {
+            steps {
+                script {
+                    // Fetch the last successful build and calculate dependency changes
+                    def lastCommit = sh(script: 'git log -1 --format=%H', returnStdout: true).trim()
+                    def lastSuccessfulCommit = sh(script: 'git log -1 --format=%H', returnStdout: true).trim() // You may need to adjust this to find the last successful build
+
+                    // Compare dependencies between the current commit and the last successful commit
+                    def dependencyChanges = sh(script: "git diff --name-only ${lastCommit} ${lastSuccessfulCommit} | grep 'package.json'", returnStdout: true).trim()
+                    if (dependencyChanges) {
+                        env.DEPENDENCY_CHANGES = 1
+                    } else {
+                        env.DEPENDENCY_CHANGES = 0
                     }
 
-                    // Step 2: Install necessary dependencies directly
-                    echo 'Installing Python dependencies...'
-                    bat """
-                        ${env.VENV_PATH}\\Scripts\\activate && pip install pandas scikit-learn numpy matplotlib
-                    """
+                    echo "Dependency changes: ${env.DEPENDENCY_CHANGES}"
+                }
+            }
+        }
+
+        stage('Check Failed Previous Builds') {
+            steps {
+                script {
+                    // Check if previous builds failed
+                    def failedBuilds = currentBuild.getPreviousBuilds()
+                    def failedCount = 0
+
+                    failedBuilds.each { build ->
+                        if (build.result == 'FAILURE') {
+                            failedCount++
+                        }
+                    }
+
+                    env.FAILED_PREVIOUS_BUILDS = failedCount
+                    echo "Failed previous builds count: ${env.FAILED_PREVIOUS_BUILDS}"
                 }
             }
         }
 
         stage('Train Model') {
             steps {
-                echo 'Training the model...'
-
                 script {
-                    // Step 1: Check if the model already exists
+                    echo 'Training the model...'
+
                     if (!fileExists("${env.MODEL_PATH}")) {
                         echo 'Training model...'
-                        // Run the model training script
                         bat """
-                            ${env.VENV_PATH}\\Scripts\\activate && python ${env.SCRIPT_PATH}\\train_model.py
+                            python ${env.SCRIPT_PATH}/train_model.py
                         """
+                        // Set model path
+                        env.MODEL_PATH = 'D:/machinelearning/trained_models/build_error_prediction_model.pkl'
                     } else {
                         echo 'Model already trained. Skipping training.'
                     }
@@ -280,84 +312,53 @@ pipeline {
 
         stage('Generate Logs') {
             steps {
-                echo 'Generating logs...'
-
                 script {
-                    // Ensure the CSV file exists, create it if not
-                    if (!fileExists("${LOG_FILE_PATH}")) {
-                        echo 'Creating build_logs.csv file...'
-                        bat """
-                            echo Build Duration,Dependency Changes,Failed Previous Builds,Build Status > "${LOG_FILE_PATH}"
-                        """
-                    }
+                    echo 'Generating logs...'
 
-                    // Add data to the CSV file (make sure it appends data)
-                    echo 'Logging build data...'
-                    def logData = "${BUILD_DURATION}, ${DEPENDENCY_CHANGES}, ${FAILED_PREVIOUS_BUILDS}, ${BUILD_STATUS}"  // Add build status
+                    // Log the build data
+                    def logData = "${env.BUILD_DURATION}, ${env.DEPENDENCY_CHANGES}, ${env.FAILED_PREVIOUS_BUILDS}"
+                    echo "Logging data: ${logData}"
+                    
+                    // Append log data to CSV
                     bat """
-                        echo ${logData} >> "${LOG_FILE_PATH}"
+                        echo ${logData} >> "${env.LOG_FILE_PATH}"
                     """
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                echo 'Building the project...'
-
-                script {
-                    def buildLogsDir = "D:\\machinelearning\\build_log"
-                    if (!fileExists(buildLogsDir)) {
-                        echo "Creating directory: ${buildLogsDir}"
-                        bat "mkdir \"${buildLogsDir}\""
-                    }
-                }
-
-                script {
-                    def logFile = "D:\\machinelearning\\build_log\\build_${env.BUILD_ID}.log"
-                    def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
-                    echo "Starting build at: ${currentDate}"
-                    bat "echo 'Starting build at: ${currentDate}' > \"${logFile}\""
-                    bat "npm run build >> \"${logFile}\" 2>&1"
-                    echo "Build log written to: ${logFile}"
                 }
             }
         }
 
         stage('Run ML Error Prediction') {
             steps {
-                echo 'Running error prediction...'
-
                 script {
-                    def logFile = "D:\\machinelearning\\build_log\\build_${env.BUILD_ID}.log"
-                    def predictionFile = "D:\\machinelearning\\build_log\\prediction_${env.BUILD_ID}.json"
-
-                    echo "Log file: ${logFile}"
-                    echo "Prediction result file: ${predictionFile}"
-
-                    // Ensure Python is available
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
-
-                    // Run error prediction without --log_file argument
+                    def predictionFile = "D:/machinelearning/build_log/prediction_result.json"
+                    echo "Running ML Error Prediction..."
+                    
                     bat """
-                        ${env.VENV_PATH}\\Scripts\\activate && python ${env.SCRIPT_PATH}\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\"
+                        python ${env.SCRIPT_PATH}/ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file ${predictionFile}
                     """
-
-                    // Display the contents of the prediction file
-                    bat "type \"${predictionFile}\""
+                    echo "Prediction written to: ${predictionFile}"
                 }
             }
         }
 
         stage('Post Build Actions') {
             steps {
-                echo 'Build Status: SUCCESS'
-                script {
-                    def logFile = "D:\\machinelearning\\build_log\\build_${env.BUILD_ID}.log"
-                    echo "Log file contents:"
-                    bat "type \"${logFile}\""
-                }
+                echo "Build Completed with status: ${currentBuild.result}"
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Final build status: ${currentBuild.result}"
+        }
+
+        success {
+            echo "Build was successful!"
+        }
+
+        failure {
+            echo "Build failed!"
         }
     }
 }
