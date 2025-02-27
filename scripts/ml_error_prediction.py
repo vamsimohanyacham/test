@@ -49,7 +49,6 @@ def make_prediction(build_duration, dependency_changes, failed_previous_builds):
     return response
 
 if __name__ == "__main__":
-    # Set up argument parsing
     parser = argparse.ArgumentParser()
     parser.add_argument('--build_duration', type=int, required=True, help="Build duration in seconds.")
     parser.add_argument('--dependency_changes', type=int, required=True, help="Number of dependency changes.")
