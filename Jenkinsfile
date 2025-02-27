@@ -218,13 +218,15 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'
-        BUILD_DURATION = '300'
-        DEPENDENCY_CHANGES = '0'
-        FAILED_PREVIOUS_BUILDS = '0'
-        VENV_PATH = "${env.WORKSPACE}\\venv"
-        LOG_FILE_PATH = "${env.WORKSPACE}\\build_logs.csv"
+        BUILD_DIR = 'build_log\\build_logs'  // This will be used to create a new build directory inside Jenkins workspace
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
+        BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
+        DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
+        FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
+        VENV_PATH = "D:\\machinelearning\\venv"  // Virtual Environment path on D: drive
+        LOG_FILE_PATH = "D:\\machinelearning\\build_logs.csv"  // Path to CSV log file on D: drive
+        MODEL_PATH = "D:\\machinelearning\\trained_models\\build_error_prediction_model.pkl"  // Path to model file on D: drive
+        SCRIPT_PATH = "D:\\machinelearning\\scripts"  // Path to scripts on D: drive
     }
 
     stages {
@@ -238,14 +240,17 @@ pipeline {
         stage('Set up Python Environment') {
             steps {
                 echo 'Setting up Python virtual environment and installing dependencies...'
+
                 script {
+                    // Step 1: Check if virtual environment exists
                     if (!fileExists("${env.VENV_PATH}\\Scripts\\activate")) {
                         echo 'Creating virtual environment...'
                         bat """
-                            python -m venv ${env.VENV_PATH}
+                            python -m venv ${env.VENV_PATH}  // Create the virtual environment on D: drive
                         """
                     }
 
+                    // Step 2: Install necessary dependencies directly
                     echo 'Installing Python dependencies...'
                     bat """
                         ${env.VENV_PATH}\\Scripts\\activate && pip install pandas scikit-learn numpy matplotlib
@@ -259,11 +264,12 @@ pipeline {
                 echo 'Training the model...'
 
                 script {
-                    def modelPath = "${env.WORKSPACE}\\trained_models\\build_error_prediction_model.pkl"
-                    if (!fileExists(modelPath)) {
+                    // Step 1: Check if the model already exists
+                    if (!fileExists("${env.MODEL_PATH}")) {
                         echo 'Training model...'
+                        // Run the model training script
                         bat """
-                            ${env.VENV_PATH}\\Scripts\\activate && python ${env.WORKSPACE}\\scripts\\train_model.py
+                            ${env.VENV_PATH}\\Scripts\\activate && python ${env.SCRIPT_PATH}\\train_model.py
                         """
                     } else {
                         echo 'Model already trained. Skipping training.'
@@ -277,15 +283,17 @@ pipeline {
                 echo 'Generating logs...'
 
                 script {
+                    // Ensure the CSV file exists, create it if not
                     if (!fileExists("${LOG_FILE_PATH}")) {
                         echo 'Creating build_logs.csv file...'
                         bat """
-                            echo Build Duration,Dependency Changes,Failed Previous Builds > "${LOG_FILE_PATH}"
+                            echo Build Duration,Dependency Changes,Failed Previous Builds,Build Status > "${LOG_FILE_PATH}"
                         """
                     }
 
+                    // Add data to the CSV file (make sure it appends data)
                     echo 'Logging build data...'
-                    def logData = "${BUILD_DURATION}, ${DEPENDENCY_CHANGES}, ${FAILED_PREVIOUS_BUILDS}"
+                    def logData = "${BUILD_DURATION}, ${DEPENDENCY_CHANGES}, ${FAILED_PREVIOUS_BUILDS}, ${BUILD_STATUS}"  // Add build status
                     bat """
                         echo ${logData} >> "${LOG_FILE_PATH}"
                     """
@@ -298,7 +306,7 @@ pipeline {
                 echo 'Building the project...'
 
                 script {
-                    def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
+                    def buildLogsDir = "D:\\machinelearning\\build_log"
                     if (!fileExists(buildLogsDir)) {
                         echo "Creating directory: ${buildLogsDir}"
                         bat "mkdir \"${buildLogsDir}\""
@@ -306,7 +314,7 @@ pipeline {
                 }
 
                 script {
-                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
+                    def logFile = "D:\\machinelearning\\build_log\\build_${env.BUILD_ID}.log"
                     def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
                     echo "Starting build at: ${currentDate}"
                     bat "echo 'Starting build at: ${currentDate}' > \"${logFile}\""
@@ -321,18 +329,21 @@ pipeline {
                 echo 'Running error prediction...'
 
                 script {
-                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
-                    def predictionFile = "${env.WORKSPACE}\\${BUILD_DIR}\\prediction_${env.BUILD_ID}.json"
+                    def logFile = "D:\\machinelearning\\build_log\\build_${env.BUILD_ID}.log"
+                    def predictionFile = "D:\\machinelearning\\build_log\\prediction_${env.BUILD_ID}.json"
 
                     echo "Log file: ${logFile}"
                     echo "Prediction result file: ${predictionFile}"
 
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"
+                    // Ensure Python is available
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
 
+                    // Run error prediction without --log_file argument
                     bat """
-                        ${env.VENV_PATH}\\Scripts\\activate && python ${env.WORKSPACE}\\scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\" 
+                        ${env.VENV_PATH}\\Scripts\\activate && python ${env.SCRIPT_PATH}\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\"
                     """
 
+                    // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
                 }
             }
@@ -342,12 +353,12 @@ pipeline {
             steps {
                 echo 'Build Status: SUCCESS'
                 script {
-                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
+                    def logFile = "D:\\machinelearning\\build_log\\build_${env.BUILD_ID}.log"
                     echo "Log file contents:"
                     bat "type \"${logFile}\""
                 }
             }
-        }  
+        }
     }
 }
 
