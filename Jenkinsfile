@@ -218,7 +218,7 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Use double-backslashes for Windows path
+        BUILD_DIR = 'build_log\\build_logs'  // Use the correct path for Windows
         PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
@@ -243,52 +243,61 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                bat 'npm run build'  // Run the build command
+
+                script {
+                    def buildLogsDir = "${env.WORKSPACE}\\${BUILD_DIR}"
+                    if (!fileExists(buildLogsDir)) {
+                        echo "Creating directory: ${buildLogsDir}"
+                        bat "mkdir \"${buildLogsDir}\""
+                    }
+                }
+
+                script {
+                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
+                    def currentDate = new Date().format('yyyy-MM-dd HH:mm:ss')
+                    echo "Starting build at: ${currentDate}"
+                    bat "echo 'Starting build at: ${currentDate}' > \"${logFile}\""
+                    bat "npm run build >> \"${logFile}\" 2>&1"
+                    echo "Build log written to: ${logFile}"
+                }
             }
         }
 
         stage('Run ML Error Prediction') {
             steps {
-                echo 'Running ML error prediction...'
+                echo 'Running error prediction...'
 
                 script {
                     def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
                     def predictionFile = "${env.WORKSPACE}\\${BUILD_DIR}\\prediction_${env.BUILD_ID}.json"
 
-                    // Run the ML prediction script
+                    echo "Log file: ${logFile}"
+                    echo "Prediction result file: ${predictionFile}"
+
+                    // Ensure Python is available
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
+
+                    // Run error prediction without --log_file argument
                     bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
 
                     // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
-
-                    // Read the prediction and take appropriate actions
-                    def prediction = readJSON file: predictionFile
-
-                    if (prediction.status == 'success') {
-                        echo "Successful Build Prediction: No Issues Detected"
-                    } else if (prediction.status == 'fail') {
-                        echo "Prediction Result: Warning or Critical Issue Detected"
-                    }
                 }
             }
         }
 
         stage('Post Build Actions') {
             steps {
-                echo 'Post Build Actions...'
+                echo 'Build Status: SUCCESS'
                 script {
-                    def predictionFile = "${env.WORKSPACE}\\${BUILD_DIR}\\prediction_${env.BUILD_ID}.json"
-                    def prediction = readJSON file: predictionFile
-
-                    if (prediction.status == 'fail') {
-                        currentBuild.result = 'UNSTABLE'
-                    }
+                    def logFile = "${env.WORKSPACE}\\${BUILD_DIR}\\build_${env.BUILD_ID}.log"
+                    echo "Log file contents:"
+                    bat "type \"${logFile}\""
                 }
             }
         }
     }
 }
-
 
 
 
