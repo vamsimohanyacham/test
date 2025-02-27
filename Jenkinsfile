@@ -218,11 +218,12 @@ pipeline {
     agent any
 
     environment {
-        BUILD_DIR = 'build_log\\build_logs'  // Correct path for Windows
+        BUILD_DIR = 'build_log\\build_logs'  // Use the correct path for Windows
         PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
+        VENV_PATH = "${env.WORKSPACE}\\venv" // Virtual Environment path
     }
 
     stages {
@@ -233,10 +234,45 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Set up Python Environment') {
             steps {
-                echo 'Installing npm dependencies...'
-                bat 'npm install'  // Install npm dependencies
+                echo 'Setting up Python virtual environment and installing dependencies...'
+
+                script {
+                    // Step 1: Check if virtual environment exists
+                    if (!fileExists("${env.VENV_PATH}\\Scripts\\activate")) {
+                        echo 'Creating virtual environment...'
+                        bat """
+                            python -m venv ${env.VENV_PATH}  // Create the virtual environment
+                        """
+                    }
+
+                    // Step 2: Install necessary dependencies directly
+                    echo 'Installing Python dependencies...'
+                    bat """
+                        ${env.VENV_PATH}\\Scripts\\activate && pip install pandas scikit-learn numpy matplotlib
+                    """
+                }
+            }
+        }
+
+        stage('Train Model') {
+            steps {
+                echo 'Training the model...'
+
+                script {
+                    // Step 1: Check if the model already exists
+                    def modelPath = "${env.WORKSPACE}\\trained_models\\build_error_prediction_model.pkl"
+                    if (!fileExists(modelPath)) {
+                        echo 'Training model...'
+                        // Run the model training script
+                        bat """
+                            ${env.VENV_PATH}\\Scripts\\activate && python ${env.WORKSPACE}\\scripts\\train_model.py
+                        """
+                    } else {
+                        echo 'Model already trained. Skipping training.'
+                    }
+                }
             }
         }
 
@@ -274,14 +310,15 @@ pipeline {
                     echo "Log file: ${logFile}"
                     echo "Prediction result file: ${predictionFile}"
 
-                    // Ensure Python is available and check version
-                    bat "\"${env.PYTHON_PATH}python.exe\" --version"  // Check Python version
+                    // Ensure Python is available
+                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
 
-                    // Run error prediction and store result in prediction file
-                    bat "\"${env.PYTHON_PATH}python.exe\" scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\""
+                    // Run error prediction without --log_file argument
+                    bat """
+                        ${env.VENV_PATH}\\Scripts\\activate && python ${env.WORKSPACE}\\scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\"
+                    """
 
                     // Display the contents of the prediction file
-                    echo "Prediction result written to: ${predictionFile}"
                     bat "type \"${predictionFile}\""
                 }
             }
@@ -298,7 +335,15 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            echo 'Cleaning up...'
+            // Cleanup or any other post-action you might need
+        }
+    }
 }
+
 
 
 
