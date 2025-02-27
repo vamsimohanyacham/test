@@ -219,7 +219,7 @@ pipeline {
 
     environment {
         BUILD_DIR = 'build_log\\build_logs'  // Use the correct path for Windows
-        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\'  // Path to Python installation
+        PYTHON_PATH = 'C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe'  // Full path to Python executable
         BUILD_DURATION = '300'  // Placeholder for build duration (in seconds)
         DEPENDENCY_CHANGES = '0'  // 0 represents 'false'
         FAILED_PREVIOUS_BUILDS = '0'  // Placeholder for number of failed previous builds
@@ -243,14 +243,14 @@ pipeline {
                     if (!fileExists("${env.VENV_PATH}\\Scripts\\activate")) {
                         echo 'Creating virtual environment...'
                         bat """
-                            python -m venv ${env.VENV_PATH}  // Create the virtual environment
+                            ${env.PYTHON_PATH} -m venv ${env.VENV_PATH}  // Create the virtual environment
                         """
                     }
 
                     // Step 2: Install necessary dependencies directly
                     echo 'Installing Python dependencies...'
                     bat """
-                        ${env.VENV_PATH}\\Scripts\\activate && pip install pandas scikit-learn numpy matplotlib
+                        ${env.VENV_PATH}\\Scripts\\activate && ${env.VENV_PATH}\\Scripts\\pip install pandas scikit-learn numpy matplotlib
                     """
                 }
             }
@@ -311,15 +311,14 @@ pipeline {
                     echo "Prediction result file: ${predictionFile}"
 
                     // Ensure Python is available
-                    bat "\"C:\\Users\\MTL1020\\AppData\\Local\\Programs\\Python\\Python39\\python.exe\" --version"  // Check Python version
+                    bat "${env.PYTHON_PATH} --version"  // Check Python version
 
                     // Run error prediction without --log_file argument
                     bat """
                         ${env.VENV_PATH}\\Scripts\\activate && python ${env.WORKSPACE}\\scripts\\ml_error_prediction.py --build_duration ${env.BUILD_DURATION} --dependency_changes ${env.DEPENDENCY_CHANGES} --failed_previous_builds ${env.FAILED_PREVIOUS_BUILDS} --prediction_file \"${predictionFile}\"
                     """
-                    echo "Prediction file generated: ${predictionFile}"
 
-                    // Display the contents of the prediction result file
+                    // Display the contents of the prediction file
                     bat "type \"${predictionFile}\""
                 }
             }
@@ -337,6 +336,7 @@ pipeline {
         }
     }
 }
+
 
 
 
